@@ -10,6 +10,14 @@ import Termos from "../pages/site/Termos";
 import Privacidade from "../pages/site/Privacidade";
 import NotFound from "../pages/site/NotFound";
 
+//Autenticação
+import Login from "../pages/auth/Login";
+import Register from "../pages/auth/Register";
+import CompleteSolicitante from "../pages/auth/CompleteSolicitante";
+import CompleteEntregador from "../pages/auth/CompleteEntregador";
+import ForgotPassword from "../pages/auth/ForgotPassword";
+import ResetPassword from "../pages/auth/ResetPassword";
+
 
 export default function AppRoutes() {
   return (
@@ -24,7 +32,17 @@ export default function AppRoutes() {
       </Route>
 
       {/*Rotas de autenticação */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/complete-solicitante" element={<CompleteSolicitante />} />
+      <Route path="/complete-entregador" element={<CompleteEntregador />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
+      {/*Rotas do solicitante */}
+      <Route path="/dashboard/solicitante/">
+          {/*<Route path="" element={<DashboardSuperAdmin />} />*/}
+      </Route>
     </Routes>
   );
 }
