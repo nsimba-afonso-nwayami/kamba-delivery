@@ -18,6 +18,15 @@ import CompleteEntregador from "../pages/auth/CompleteEntregador";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import ResetPassword from "../pages/auth/ResetPassword";
 
+//Dashboard Solicitante
+import DashboardSolicitante from "../pages/solicitante/DashboardSolicitante";
+import MeusPedidos from "../pages/solicitante/MeusPedidos";
+import HistoricoPedidos from "../pages/solicitante/HistoricoPedidos";
+import ConfigSolicitante from "../pages/solicitante/ConfigSolicitante";
+import MensagensSolicitante from "../pages/solicitante/MensagensSolicitante";
+import NotificacoesSolicitante from "../pages/solicitante/NotificacoesSolicitante";
+import NotFoundSolicitante from "../pages/solicitante/NotFoundSolicitante";
+
 
 export default function AppRoutes() {
   return (
@@ -41,7 +50,13 @@ export default function AppRoutes() {
 
       {/*Rotas do solicitante */}
       <Route path="/dashboard/solicitante/">
-          {/*<Route path="" element={<DashboardSuperAdmin />} />*/}
+          <Route path="" element={<DashboardSolicitante />} />
+          <Route path="pedidos" element={<MeusPedidos />} />
+          <Route path="historico" element={<HistoricoPedidos />} />
+          <Route path="configuracoes" element={<ConfigSolicitante />} />
+          <Route path="mensagens" element={<MensagensSolicitante />} />
+          <Route path="notificacoes" element={<NotificacoesSolicitante />} />
+          <Route path="*" element={<NotFoundSolicitante />} />
       </Route>
     </Routes>
   );
