@@ -1,0 +1,91 @@
+import { Link } from "react-router-dom";
+
+export default function Login() {
+  // Botão padronizado Premium (font-bold e rounded-xl)
+  const btnPrimary = "w-full bg-red-700 text-white py-4 rounded-xl font-bold text-center shadow-lg shadow-red-700/20 hover:bg-red-800 transition-all duration-300 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2";
+
+  return (
+    <>
+      <title>Entrar | Kamba Delivery</title>
+
+      {/* Removido o min-h-screen para evitar que fique esticado */}
+      <section className="py-24 bg-gray-50 px-6 flex justify-center items-center">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl shadow-gray-200/50 p-10 relative border border-gray-100">
+
+          {/* LOGO IDENTIDADE (CONFORME O HEADER) */}
+          <div className="flex justify-center mb-8">
+            <div className="bg-red-700 text-white p-2.5 rounded-lg text-xl shadow-lg shadow-red-700/20">
+              <i className="fas fa-truck-fast"></i>
+            </div>
+          </div>
+
+          {/* HEADER DO FORMULÁRIO */}
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-800">
+              Bem-vindo de volta
+            </h1>
+            <p className="mt-2 text-gray-500 text-sm font-medium">
+              Entre na sua conta para continuar
+            </p>
+          </div>
+
+          {/* FORMULÁRIO */}
+          <form className="mt-10 space-y-5" onSubmit={(e) => e.preventDefault()}>
+
+            {/* EMAIL */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700 ml-1">Email</label>
+              <input
+                type="email"
+                placeholder="exemplo@email.com"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none transition-all focus:border-red-700 bg-gray-50/50"
+              />
+            </div>
+
+            {/* SENHA */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center ml-1">
+                <label className="text-sm font-bold text-gray-700">Senha</label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-bold text-red-700 hover:text-red-900"
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
+              <input
+                type="password"
+                placeholder="••••••••"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none transition-all focus:border-red-700 bg-gray-50/50"
+              />
+            </div>
+
+            {/* BOTÃO LOGIN */}
+            <div className="pt-2">
+              <button type="submit" className={btnPrimary}>
+                Entrar
+              </button>
+            </div>
+
+          </form>
+
+          {/* DIVISOR */}
+          <div className="my-8 flex items-center gap-3">
+            <div className="flex-1 h-px bg-gray-100"></div>
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">ou</span>
+            <div className="flex-1 h-px bg-gray-100"></div>
+          </div>
+
+          {/* LINK REGISTO */}
+          <p className="text-center text-sm text-gray-500 font-medium">
+            Ainda não tens conta?{" "}
+            <Link to="/register" className="text-red-700 font-bold hover:underline underline-offset-4 transition-all">
+              Criar conta
+            </Link>
+          </p>
+
+        </div>
+      </section>
+    </>
+  );
+}
