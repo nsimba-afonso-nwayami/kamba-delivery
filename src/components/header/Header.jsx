@@ -74,6 +74,10 @@ export default function Header() {
             Entregador
           </HashLink>
 
+          <Link to="/dashboard/solicitante/" className={navLinkStyles} onClick={() => setMenuOpen(false)}>
+            Ver
+          </Link>
+
           {/* ÁREA DE BOTÕES */}
           <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto mt-4 md:mt-0 pt-6 md:pt-0 border-t md:border-none border-rose-200">
             
