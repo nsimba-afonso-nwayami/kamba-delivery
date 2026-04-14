@@ -38,7 +38,7 @@ export default function MensagensSolicitante() {
   return (
     <SolicitanteLayout title="Mensagens">
       {/* px-3 para telas muito pequenas como o itel P65 */}
-      <div className="max-w-4xl mx-auto px-3 md:px-4 pb-20">
+      <div className="max-w-4xl mx-auto pb-20">
         
         {/* HEADER */}
         <div className="mb-6">
