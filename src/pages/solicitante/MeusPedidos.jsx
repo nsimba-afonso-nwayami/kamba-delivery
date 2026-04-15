@@ -118,7 +118,7 @@ export default function MeusPedidos() {
     <>
       <title>Meus pedidos | Kamba Delivery</title>
       <SolicitanteLayout title="Meus Pedidos">
-        <div className="max-w-5xl mx-auto pb-24 overflow-x-hidden px-3 sm:px-0">
+        <div className="w-full max-w-5xl mx-auto pb-20 px-3 sm:px-6 lg:px-8">
           
           {/* HEADER */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">

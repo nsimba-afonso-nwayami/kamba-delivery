@@ -30,7 +30,7 @@ export default function DashboardEntregador() {
       <title>Dashboard | Kamba Delivery</title>
 
       <EntregadorLayout title="Início">
-        <div className="max-w-5xl mx-auto pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-5xl mx-auto pb-20 px-3 sm:px-6 lg:px-8">
 
           {/* SEÇÃO DE AÇÕES RÁPIDAS */}
           <div className="flex flex-col sm:flex-row gap-4 mb-8">
@@ -168,7 +168,7 @@ export default function DashboardEntregador() {
             </div>
             <div className="p-4 bg-rose-200/20 rounded-xl border border-rose-200/50">
               <p className="text-[8px] font-bold text-rose-500 uppercase tracking-widest mb-1 text-left">IBAN para Transferência</p>
-              <p className="text-xs font-bold text-red-900 tracking-tighter text-left break-words">AO06 0006 0000 1234 5678 9012 3</p>
+              <p className="text-xs font-bold text-red-900 tracking-tighter text-left wrap-break-word">AO06 0006 0000 1234 5678 9012 3</p>
             </div>
             <button className="mt-4 w-full py-4 bg-red-700 text-white rounded-xl font-bold text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-red-100 active:scale-95 transition-all cursor-pointer">
               Copiar Dados de Pagamento

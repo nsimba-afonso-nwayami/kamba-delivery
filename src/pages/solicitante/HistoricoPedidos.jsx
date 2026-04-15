@@ -55,7 +55,7 @@ export default function HistoricoPedidos() {
     <>
       <title>Histórico | Kamba Delivery</title>
       <SolicitanteLayout title="Histórico">
-        <div className="max-w-5xl mx-auto pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-5xl mx-auto pb-20 px-3 sm:px-6 lg:px-8">
           
           {/* HEADER */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
