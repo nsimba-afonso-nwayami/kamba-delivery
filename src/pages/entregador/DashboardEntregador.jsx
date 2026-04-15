@@ -30,7 +30,7 @@ export default function DashboardEntregador() {
       <title>Dashboard | Kamba Delivery</title>
 
       <EntregadorLayout title="Início">
-        <div className="w-full max-w-5xl mx-auto pb-20 px-3 sm:px-6 lg:px-8">
+        <div className="space-y-6">
 
           {/* SEÇÃO DE AÇÕES RÁPIDAS - Sem alturas fixas */}
           <div className="flex flex-col sm:flex-row gap-4 mb-8">
