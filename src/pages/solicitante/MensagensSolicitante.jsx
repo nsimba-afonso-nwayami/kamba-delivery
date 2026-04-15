@@ -40,7 +40,7 @@ export default function MensagensSolicitante() {
       <title>Mensagens | Kamba Delivery</title>
       <SolicitanteLayout title="Mensagens">
         {/* Container com padding lateral consistente */}
-        <div className="w-full max-w-4xl mx-auto pb-20 px-3 sm:px-6 lg:px-8">
+        <div className="space-y-6">
           
           {/* HEADER */}
           <div className="mb-6">

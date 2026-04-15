@@ -25,7 +25,7 @@ export default function ConfigSolicitante() {
     <>
       <title>Configurações | Kamba Delivery</title>
       <SolicitanteLayout title="Configurações">
-        <div className="w-full max-w-4xl pb-20 sm:px-6 lg:px-8">
+        <div className="space-y-6">
           
           {/* HEADER */}
           <div className="mb-10">
