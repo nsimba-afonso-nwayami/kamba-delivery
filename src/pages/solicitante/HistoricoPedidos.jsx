@@ -115,14 +115,14 @@ export default function HistoricoPedidos() {
                           <span className="text-[10px] text-gray-300">•</span>
                           <span className="text-xs font-bold text-gray-500">{item.data}</span>
                         </div>
-                        <h3 className="font-bold text-gray-800 text-lg leading-tight mb-2 break-words">{item.titulo}</h3>
+                        <h3 className="font-bold text-gray-800 text-lg leading-tight mb-2 wrap-break-word">{item.titulo}</h3>
                         
                         <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2 text-xs font-medium text-gray-500 break-words">
+                          <div className="flex items-center gap-2 text-xs font-medium text-gray-500 wrap-break-word">
                               <i className="fas fa-circle text-[6px] text-gray-300"></i>
                               <span className="font-bold">De:</span> {item.origem}
                           </div>
-                          <div className="flex items-center gap-2 text-xs font-medium text-gray-500 break-words">
+                          <div className="flex items-center gap-2 text-xs font-medium text-gray-500 wrap-break-word">
                               <i className="fas fa-circle text-[6px] text-red-400"></i>
                               <span className="font-bold">Para:</span> {item.destino}
                           </div>
@@ -143,7 +143,7 @@ export default function HistoricoPedidos() {
                   <div className="mt-5 pt-4 border-t border-gray-50 flex items-center justify-between flex-wrap gap-3">
                     <div className="flex items-center gap-3">
                       <span className="text-[10px] font-bold text-gray-400 uppercase">Entregador:</span>
-                      <span className="text-xs font-bold text-gray-700 break-words">{item.entregador}</span>
+                      <span className="text-xs font-bold text-gray-700 wrap-break-word">{item.entregador}</span>
                     </div>
                     
                     <div className="flex gap-2 flex-wrap">
