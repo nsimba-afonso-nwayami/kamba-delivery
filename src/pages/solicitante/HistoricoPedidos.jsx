@@ -44,44 +44,33 @@ export default function HistoricoPedidos() {
   };
 
   const filteredHistorico = historico.filter((item) => {
-    const matchSearch =
-      item.titulo.toLowerCase().includes(search.toLowerCase()) ||
-      item.id.toLowerCase().includes(search.toLowerCase());
-
-    const matchType =
-      filterType === "todos"
-        ? true
-        : filterType === "concluido"
-        ? item.status === "concluido"
-        : item.status === "cancelado";
-
+    const matchSearch = item.titulo.toLowerCase().includes(search.toLowerCase()) || item.id.toLowerCase().includes(search.toLowerCase());
+    const matchType = filterType === "todos" ? true : 
+                      filterType === "concluido" ? item.status === "concluido" : 
+                      item.status === "cancelado";
     return matchSearch && matchType;
   });
 
   return (
     <>
       <title>Histórico | Kamba Delivery</title>
-
       <SolicitanteLayout title="Histórico">
-        {/* 🔧 FIX GERAL */}
-        <div className="max-w-5xl mx-auto pb-20 px-3 sm:px-0 overflow-x-hidden">
-
+        <div className="max-w-5xl mx-auto pb-20">
+          
           {/* HEADER */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
               <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Arquivo de Entregas</h2>
               <p className="text-sm text-gray-500 font-medium">Consulte seus gastos e pedidos finalizados</p>
             </div>
-
-            <button className="w-full md:w-auto flex items-center justify-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm text-xs font-bold text-gray-600 hover:bg-gray-50 transition-all">
+            <button className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm text-xs font-bold text-gray-600 hover:bg-gray-50 transition-all">
               <i className="fas fa-download"></i> Exportar PDF
             </button>
           </div>
 
-          {/* FILTROS */}
+          {/* FILTROS E BUSCA */}
           <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-3 mb-8">
-            
-            <div className="relative flex-1 min-w-0">
+            <div className="relative flex-1">
               <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
               <input
                 type="text"
@@ -91,17 +80,15 @@ export default function HistoricoPedidos() {
                 className="w-full pl-11 pr-4 py-3 bg-gray-50/50 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-red-700/5 transition-all text-sm font-medium"
               />
             </div>
-
-            {/* 🔧 BOTÕES RESPONSIVOS */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2">
               {["todos", "concluido", "cancelado"].map((type) => (
                 <button
                   key={type}
                   onClick={() => setFilterType(type)}
-                  className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                    filterType === type
-                      ? "bg-red-700 text-white shadow-md shadow-red-200"
-                      : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                  className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                    filterType === type 
+                    ? "bg-red-700 text-white shadow-md shadow-red-200" 
+                    : "bg-gray-50 text-gray-500 hover:bg-gray-100"
                   }`}
                 >
                   {type === "todos" ? "Todos" : type}
@@ -110,72 +97,62 @@ export default function HistoricoPedidos() {
             </div>
           </div>
 
-          {/* LISTA */}
+          {/* TABELA / LISTA DE HISTÓRICO */}
           <div className="space-y-4">
             {filteredHistorico.length > 0 ? (
               filteredHistorico.map((item) => (
                 <div key={item.id} className="bg-white border border-gray-100 rounded-2xl p-5 hover:border-red-100 transition-all shadow-sm">
-
                   <div className="flex flex-wrap justify-between items-start gap-4">
-
-                    {/* INFO */}
-                    <div className="flex gap-4 min-w-0">
-                      
-                      <div className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-lg ${statusStyle[item.status]}`}>
+                    
+                    {/* INFO PRINCIPAL */}
+                    <div className="flex gap-4">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg ${statusStyle[item.status]}`}>
                         <i className={`fas ${item.status === 'concluido' ? 'fa-check-double' : 'fa-ban'}`}></i>
                       </div>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{item.id}</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{item.id}</span>
                           <span className="text-[10px] text-gray-300">•</span>
-                          <span className="text-xs font-bold text-gray-500 truncate">{item.data}</span>
+                          <span className="text-xs font-bold text-gray-500">{item.data}</span>
                         </div>
-
-                        <h3 className="font-bold text-gray-800 text-lg leading-tight mb-2 truncate">
-                          {item.titulo}
-                        </h3>
-
+                        <h3 className="font-bold text-gray-800 text-lg leading-tight mb-2">{item.titulo}</h3>
+                        
                         <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2 text-xs font-medium text-gray-500 min-w-0">
-                            <i className="fas fa-circle text-[6px] text-gray-300 shrink-0"></i>
-                            <span className="font-bold shrink-0">De:</span>
-                            <span className="truncate">{item.origem}</span>
+                          <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
+                              <i className="fas fa-circle text-[6px] text-gray-300"></i>
+                              <span className="font-bold">De:</span> {item.origem}
                           </div>
-
-                          <div className="flex items-center gap-2 text-xs font-medium text-gray-500 min-w-0">
-                            <i className="fas fa-circle text-[6px] text-red-400 shrink-0"></i>
-                            <span className="font-bold shrink-0">Para:</span>
-                            <span className="truncate">{item.destino}</span>
+                          <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
+                              <i className="fas fa-circle text-[6px] text-red-400"></i>
+                              <span className="font-bold">Para:</span> {item.destino}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* VALOR */}
-                    <div className="text-right shrink-0">
-                      <p className="text-lg font-bold text-gray-800 whitespace-nowrap">{item.valor}</p>
+                    {/* VALOR E STATUS */}
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-gray-800">{item.valor}</p>
                       <span className={`inline-block mt-1 text-[10px] font-bold px-3 py-1 rounded-full border uppercase ${statusStyle[item.status]}`}>
                         {item.status}
                       </span>
                     </div>
                   </div>
 
-                  {/* AÇÕES */}
-                  <div className="mt-5 pt-4 border-t border-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase shrink-0">Entregador:</span>
-                      <span className="text-xs font-bold text-gray-700 truncate">{item.entregador}</span>
+                  {/* AÇÕES DE HISTÓRICO */}
+                  <div className="mt-5 pt-4 border-t border-gray-50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase">Entregador:</span>
+                      <span className="text-xs font-bold text-gray-700">{item.entregador}</span>
                     </div>
-
-                    <div className="flex gap-2 w-full sm:w-auto">
+                    
+                    <div className="flex gap-2">
                       {item.status === "concluido" && (
-                        <button className="flex-1 sm:flex-none px-4 py-2 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-lg hover:bg-amber-100 transition-all uppercase tracking-tighter border border-amber-100">
+                        <button className="px-4 py-2 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-lg hover:bg-amber-100 transition-all uppercase tracking-tighter border border-amber-100">
                           <i className="fas fa-star mr-1"></i> Avaliar
                         </button>
                       )}
-                      <button className="flex-1 sm:flex-none px-4 py-2 bg-gray-900 text-white text-[10px] font-bold rounded-lg hover:bg-red-700 transition-all uppercase tracking-tighter shadow-sm">
+                      <button className="px-4 py-2 bg-gray-900 text-white text-[10px] font-bold rounded-lg hover:bg-red-700 transition-all uppercase tracking-tighter shadow-sm">
                         Reencomendar
                       </button>
                     </div>
@@ -189,7 +166,6 @@ export default function HistoricoPedidos() {
               </div>
             )}
           </div>
-
         </div>
       </SolicitanteLayout>
     </>
