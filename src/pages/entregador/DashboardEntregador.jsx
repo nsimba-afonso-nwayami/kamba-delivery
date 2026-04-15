@@ -32,28 +32,28 @@ export default function DashboardEntregador() {
       <EntregadorLayout title="Início">
         <div className="w-full max-w-5xl mx-auto pb-20 px-3 sm:px-6 lg:px-8">
 
-          {/* SEÇÃO DE AÇÕES RÁPIDAS */}
+          {/* SEÇÃO DE AÇÕES RÁPIDAS - Sem alturas fixas */}
           <div className="flex flex-col sm:flex-row gap-4 mb-8">
             <button 
               onClick={() => setIsSaldoOpen(true)}
-              className="flex-1 bg-red-900 py-8 px-6 rounded-2xl flex flex-col items-center justify-center gap-3 shadow-xl active:scale-95 transition-all cursor-pointer group"
+              className="flex-1 bg-red-900 py-10 px-6 rounded-2xl flex flex-col items-center justify-center gap-4 shadow-xl active:scale-95 transition-all cursor-pointer group"
             >
               <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center group-hover:bg-rose-500/20 transition-colors shrink-0">
                 <i className="fas fa-wallet text-white text-lg"></i>
               </div>
-              <span className="text-[10px] font-bold text-rose-200 uppercase tracking-widest text-center leading-relaxed">
+              <span className="text-[10px] font-bold text-rose-200 uppercase tracking-[0.2em] text-center leading-relaxed max-w-40">
                 Saldo de Operação
               </span>
             </button>
 
             <button 
               onClick={() => setIsDadosBancariosOpen(true)}
-              className="flex-1 bg-white py-8 px-6 rounded-2xl flex flex-col items-center justify-center gap-3 border border-rose-200 shadow-sm active:scale-95 transition-all cursor-pointer group"
+              className="flex-1 bg-white py-10 px-6 rounded-2xl flex flex-col items-center justify-center gap-4 border border-rose-200 shadow-sm active:scale-95 transition-all cursor-pointer group"
             >
               <div className="w-12 h-12 bg-rose-200/30 rounded-full flex items-center justify-center group-hover:bg-rose-200/50 transition-colors shrink-0">
                 <i className="fas fa-university text-red-700 text-lg"></i>
               </div>
-              <span className="text-[10px] font-bold text-red-700 uppercase tracking-widest text-center leading-relaxed">
+              <span className="text-[10px] font-bold text-red-700 uppercase tracking-[0.2em] text-center leading-relaxed max-w-40">
                 Carregar Carteira
               </span>
             </button>
@@ -62,12 +62,12 @@ export default function DashboardEntregador() {
           {/* SEÇÃO DE ESTATÍSTICAS */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
             <div className="bg-white p-6 rounded-2xl border border-rose-200 shadow-sm">
-              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ganhos de Hoje</p>
-              <p className="text-2xl font-black text-red-900 tracking-tight">12.450 <span className="text-sm font-bold text-red-700">Kz</span></p>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1 text-left">Ganhos de Hoje</p>
+              <p className="text-2xl font-black text-red-900 tracking-tight text-left">12.450 <span className="text-sm font-bold text-red-700">Kz</span></p>
             </div>
             
             <div className="bg-white p-6 rounded-2xl border border-rose-200 shadow-sm flex justify-between items-end">
-              <div>
+              <div className="text-left">
                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Corridas</p>
                 <p className="text-2xl font-black text-red-900">14</p>
               </div>
@@ -75,7 +75,7 @@ export default function DashboardEntregador() {
             </div>
 
             <div className="bg-white p-6 rounded-2xl border border-rose-200 shadow-sm flex justify-between items-end">
-              <div>
+              <div className="text-left">
                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Avaliação</p>
                 <p className="text-2xl font-black text-red-900">4.9</p>
               </div>
@@ -87,7 +87,7 @@ export default function DashboardEntregador() {
 
           {/* LISTAGEM DE PEDIDOS */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4 px-2 flex-wrap gap-2">
+            <div className="flex items-center justify-between mb-4 px-2">
               <h2 className="text-lg font-bold text-red-900 tracking-tight flex items-center gap-2">
                 <span className="w-1.5 h-5 bg-red-700 rounded-full"></span>
                 Pedidos em Aberto
@@ -96,19 +96,19 @@ export default function DashboardEntregador() {
             </div>
 
             {pedidosDisponiveis.map((pedido) => (
-              <div key={pedido.id} className="bg-white border border-rose-200/60 rounded-2xl p-6 shadow-sm w-full">
+              <div key={pedido.id} className="bg-white border border-rose-200/60 rounded-2xl p-6 shadow-sm">
                 <div className="flex justify-between items-start gap-4 mb-6 flex-wrap">
                   <div className="min-w-0">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{pedido.id} • {pedido.distancia}</span>
                     <h3 className="font-black text-red-900 text-2xl tracking-tight">{pedido.valor}</h3>
                   </div>
-                  <button className="bg-red-700 text-white px-6 sm:px-8 py-3.5 rounded-xl font-bold text-[10px] uppercase tracking-[0.15em] shadow-lg shadow-red-200 hover:bg-red-600 active:scale-95 transition-all cursor-pointer">
+                  <button className="bg-red-700 text-white px-8 py-3.5 rounded-xl font-bold text-[10px] uppercase tracking-[0.15em] shadow-lg shadow-red-200 hover:bg-red-600 active:scale-95 transition-all cursor-pointer ml-auto">
                     Aceitar
                   </button>
                 </div>
 
-                {/* Linha do tempo */}
-                <div className="space-y-4 relative">
+                {/* Linha do tempo recuperada e fluida */}
+                <div className="space-y-5 relative">
                   <div className="absolute left-2.25 top-3 bottom-3 w-0.5 bg-rose-200/50"></div>
                   
                   <div className="flex items-start gap-4 relative z-10">
@@ -140,7 +140,7 @@ export default function DashboardEntregador() {
         <ModalSmall isOpen={isSaldoOpen} onClose={() => setIsSaldoOpen(false)} title="Carteira de Trabalho">
           <div className="text-center py-4">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Saldo Atual para Serviços</p>
-            <h2 className="text-4xl font-black text-red-900 tracking-tight">
+            <h2 className="text-4xl font-black text-red-900 tracking-tight text-center">
               8.500 <span className="text-lg text-red-700 font-bold">Kz</span>
             </h2>
             <div className="mt-6 p-4 bg-gray-50 rounded-xl text-left border border-gray-100">
@@ -159,16 +159,16 @@ export default function DashboardEntregador() {
 
         <ModalSmall isOpen={isDadosBancariosOpen} onClose={() => setIsDadosBancariosOpen(false)} title="Carregar Carteira">
           <div className="space-y-3 py-2">
-            <p className="text-[11px] text-gray-500 font-medium mb-5 text-center leading-relaxed">
+            <p className="text-[11px] text-gray-500 font-medium mb-5 text-center leading-relaxed px-2">
               Deposite para os dados abaixo para carregar o seu saldo de trabalho.
             </p>
-            <div className="p-4 bg-rose-200/20 rounded-xl border border-rose-200/50">
+            <div className="p-4 bg-rose-200/10 rounded-xl border border-rose-200/30">
               <p className="text-[8px] font-bold text-rose-500 uppercase tracking-widest mb-1 text-left">Banco Oficial (Kamba)</p>
               <p className="text-sm font-bold text-red-900 text-left">BFA - Kamba Delivery</p>
             </div>
-            <div className="p-4 bg-rose-200/20 rounded-xl border border-rose-200/50">
+            <div className="p-4 bg-rose-200/10 rounded-xl border border-rose-200/30">
               <p className="text-[8px] font-bold text-rose-500 uppercase tracking-widest mb-1 text-left">IBAN para Transferência</p>
-              <p className="text-xs font-bold text-red-900 tracking-tighter text-left wrap-break-word">AO06 0006 0000 1234 5678 9012 3</p>
+              <p className="text-xs font-bold text-red-900 tracking-tighter text-left break-all">AO06 0006 0000 1234 5678 9012 3</p>
             </div>
             <button className="mt-4 w-full py-4 bg-red-700 text-white rounded-xl font-bold text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-red-100 active:scale-95 transition-all cursor-pointer">
               Copiar Dados de Pagamento
