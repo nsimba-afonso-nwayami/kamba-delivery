@@ -32,7 +32,7 @@ export default function NotFoundSolicitante() {
           {/* BOTÕES DE ATALHO */}
           <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
             <Link 
-              to="/dashboard/solicitante" 
+              to="/dashboard/solicitante/" 
               className="flex-1 bg-gray-900 text-white px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-gray-200 active:scale-95 flex items-center justify-center gap-3"
             >
               <i className="fas fa-home"></i>
