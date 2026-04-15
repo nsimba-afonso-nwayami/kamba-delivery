@@ -102,12 +102,12 @@ export default function EntregasEntregador() {
 
             <div className="w-full h-100 rounded-xl overflow-hidden relative z-0">
 
-              <div className="flex justify-end mb-3">
+              {/* BOTÃO FLUTUANTE */}
               <button
                 onClick={() =>
                   setMapType(mapType === "map" ? "satellite" : "map")
                 }
-                className="px-4 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition flex items-center gap-2"
+                className="absolute top-3 right-3 z-999 px-3 py-2 rounded-xl bg-white/90 backdrop-blur-md border border-gray-100 shadow-lg flex items-center gap-2 text-xs font-bold hover:bg-white transition"
               >
                 <i
                   className={`fas ${
@@ -117,7 +117,6 @@ export default function EntregasEntregador() {
 
                 {mapType === "map" ? "Satélite" : "Mapa"}
               </button>
-            </div>
 
               <MapContainer
                 center={entrega.origemCoords}
@@ -150,7 +149,6 @@ export default function EntregasEntregador() {
                   ]}
                   pathOptions={{ color: "red", weight: 4 }}
                 />
-
               </MapContainer>
 
             </div>
