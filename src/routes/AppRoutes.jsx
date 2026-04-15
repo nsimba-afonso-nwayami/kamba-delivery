@@ -27,6 +27,9 @@ import MensagensSolicitante from "../pages/solicitante/MensagensSolicitante";
 import NotificacoesSolicitante from "../pages/solicitante/NotificacoesSolicitante";
 import NotFoundSolicitante from "../pages/solicitante/NotFoundSolicitante";
 
+//Dashboard Entregador
+import DashboardEntregador from "../pages/entregador/DashboardEntregador";
+
 
 export default function AppRoutes() {
   return (
@@ -57,6 +60,11 @@ export default function AppRoutes() {
           <Route path="mensagens" element={<MensagensSolicitante />} />
           <Route path="notificacoes" element={<NotificacoesSolicitante />} />
           <Route path="*" element={<NotFoundSolicitante />} />
+      </Route>
+
+      {/*Rotas do solicitante */}
+      <Route path="/dashboard/entregador/">
+        <Route path="" element={<DashboardEntregador />} />
       </Route>
     </Routes>
   );
