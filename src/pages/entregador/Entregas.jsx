@@ -9,6 +9,7 @@ import "leaflet/dist/leaflet.css";
 export default function EntregasEntregador() {
     const [openChat, setOpenChat] = useState(false);
     const [newMessage, setNewMessage] = useState("");
+    const [mapType, setMapType] = useState("map"); // "map" | "satellite"
 
   // MOCK (depois vem da API)
   const entrega = {
@@ -101,12 +102,35 @@ export default function EntregasEntregador() {
 
             <div className="w-full h-100 rounded-xl overflow-hidden relative z-0">
 
+              <div className="flex justify-end mb-3">
+              <button
+                onClick={() =>
+                  setMapType(mapType === "map" ? "satellite" : "map")
+                }
+                className="px-4 py-2 text-xs font-bold rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition flex items-center gap-2"
+              >
+                <i
+                  className={`fas ${
+                    mapType === "map" ? "fa-satellite" : "fa-map"
+                  } text-red-700`}
+                ></i>
+
+                {mapType === "map" ? "Satélite" : "Mapa"}
+              </button>
+            </div>
+
               <MapContainer
                 center={entrega.origemCoords}
                 zoom={12}
                 className="h-full w-full z-0"
               >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <TileLayer
+                  url={
+                    mapType === "satellite"
+                      ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                      : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  }
+                />
 
                 {/* ORIGEM */}
                 <Marker position={entrega.origemCoords}>
