@@ -70,21 +70,21 @@ export default function SidebarEntregador({ sidebarOpen, setSidebarOpen }) {
           </Link>
 
           <Link
-            to="/dashboard/entregador/lista-pedidos"
+            to="/dashboard/entregador/entregas"
             className={`${linkStyle} ${
-              isActive("/dashboard/entregador/lista-pedidos")
+              isActive("/dashboard/entregador/entregas")
                 ? activeStyle
                 : normalStyle
             }`}
           >
             <i
-              className={`fas fa-list ${
-                isActive("/dashboard/entregador/lista-pedidos")
+              className={`fas fa-motorcycle ${
+                isActive("/dashboard/entregador/entregas")
                   ? "text-white"
                   : "text-rose-400"
               }`}
             ></i>
-            Lista de Pedidos
+            Entregas
           </Link>
 
           <Link
