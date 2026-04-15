@@ -51,7 +51,7 @@ export default function SidebarSolicitante({ sidebarOpen, setSidebarOpen }) {
         {/* NAV */}
         <nav className="space-y-2 flex-1">
           <Link 
-            to="/dashboard/solicitante" 
+            to="/dashboard/solicitante/" 
             className={`${linkStyle} ${isActive("/dashboard/solicitante") ? activeStyle : normalStyle}`}
           >
             <i className={`fas fa-gauge-high ${isActive("/dashboard/solicitante") ? "text-white" : "text-rose-400"}`}></i>

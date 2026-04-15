@@ -56,12 +56,12 @@ export default function SidebarEntregador({ sidebarOpen, setSidebarOpen }) {
           <Link
             to="/dashboard/entregador"
             className={`${linkStyle} ${
-              isActive("/dashboard/entregador") ? activeStyle : normalStyle
+              isActive("/dashboard/entregador/") ? activeStyle : normalStyle
             }`}
           >
             <i
               className={`fas fa-gauge-high ${
-                isActive("/dashboard/entregador")
+                isActive("/dashboard/entregador/")
                   ? "text-white"
                   : "text-rose-400"
               }`}
