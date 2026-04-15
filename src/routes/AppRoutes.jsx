@@ -29,6 +29,12 @@ import NotFoundSolicitante from "../pages/solicitante/NotFoundSolicitante";
 
 //Dashboard Entregador
 import DashboardEntregador from "../pages/entregador/DashboardEntregador";
+import Entregas from "../pages/entregador/Entregas";
+import HistoricoEntregador from "../pages/entregador/HistoricoEntregador";
+import ConfigEntregador from "../pages/entregador/ConfigEntregador";
+import MensagensEntregador from "../pages/entregador/MensagensEntregador";
+import NotificacoesEntregador from "../pages/entregador/NotificacoesEntregador";
+import NotFoundEntregador from "../pages/entregador/NotFoundEntregador";
 
 
 export default function AppRoutes() {
@@ -62,9 +68,15 @@ export default function AppRoutes() {
           <Route path="*" element={<NotFoundSolicitante />} />
       </Route>
 
-      {/*Rotas do solicitante */}
+      {/*Rotas do Entregador */}
       <Route path="/dashboard/entregador/">
         <Route path="" element={<DashboardEntregador />} />
+        <Route path="entregas" element={<Entregas />} />
+        <Route path="historico" element={<HistoricoEntregador />} />
+        <Route path="configuracoes" element={<ConfigEntregador />} />
+        <Route path="mensagens" element={<MensagensEntregador />} />
+        <Route path="notificacoes" element={<NotificacoesEntregador />} />
+        <Route path="*" element={<NotFoundEntregador />} />
       </Route>
     </Routes>
   );
