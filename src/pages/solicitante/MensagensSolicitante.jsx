@@ -39,8 +39,8 @@ export default function MensagensSolicitante() {
     <>
       <title>Mensagens | Kamba Delivery</title>
       <SolicitanteLayout title="Mensagens">
-        {/* px-3 para telas muito pequenas como o itel P65 */}
-        <div className="max-w-4xl mx-auto pb-20">
+        {/* Container com padding lateral consistente */}
+        <div className="w-full max-w-4xl mx-auto pb-20 px-3 sm:px-6 lg:px-8">
           
           {/* HEADER */}
           <div className="mb-6">
@@ -48,15 +48,15 @@ export default function MensagensSolicitante() {
             <p className="text-[11px] md:text-sm text-gray-500 font-medium leading-tight">Fale com seus entregadores ou suporte</p>
           </div>
 
-          {/* LISTA DE CONVERSAS - Fix para telas estreitas */}
-          <div className="bg-white border border-gray-100 rounded-4xl overflow-hidden shadow-sm">
+          {/* LISTA DE CONVERSAS */}
+          <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm w-full">
             {conversas.map((chat) => (
               <button
                 key={chat.id}
                 onClick={() => setSelectedChat(chat)}
                 className="w-full flex items-start sm:items-center gap-3 p-4 hover:bg-gray-50 transition-all border-b border-gray-50 last:border-0 text-left"
               >
-                {/* Avatar com tamanho fixo para não quebrar o flex */}
+                {/* Avatar */}
                 <div className="relative shrink-0 mt-1 sm:mt-0">
                   <img src={chat.foto} className="w-12 h-12 rounded-2xl object-cover shadow-sm" alt={chat.nome} />
                   {chat.online && (
@@ -64,7 +64,7 @@ export default function MensagensSolicitante() {
                   )}
                 </div>
 
-                {/* Conteúdo Central - min-w-0 é CRUCIAL para o truncate funcionar */}
+                {/* Conteúdo Central */}
                 <div className="flex-1 min-w-0 overflow-hidden">
                   <div className="flex justify-between items-center gap-2">
                     <h3 className="font-bold text-gray-800 text-sm truncate">{chat.nome}</h3>
@@ -93,20 +93,19 @@ export default function MensagensSolicitante() {
             title={selectedChat?.nome || "Conversa"}
             icon="fas fa-comment-dots"
           >
-            {/* h-[65vh] evita que o modal "fure" o teclado no mobile */}
-            <div className="flex flex-col h-[65vh] max-h-125">
+            <div className="flex flex-col h-[65vh] max-h-[75vh]">
               
               {/* CORPO DA MENSAGEM */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-4 bg-gray-50/50 rounded-2xl border border-gray-100/50">
+              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 bg-gray-50/50 rounded-2xl border border-gray-100/50">
                 {mensagensChat.map((m) => (
                   <div key={m.id} className={`flex ${m.enviadoPor === "eu" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[88%] p-3 rounded-2xl text-[13px] font-medium shadow-sm ${
+                    <div className={`inline-block max-w-[85%] p-3 rounded-2xl text-[13px] font-medium shadow-sm wrap-break-word ${
                       m.enviadoPor === "eu" 
-                      ? "bg-gray-900 text-white rounded-tr-none" 
-                      : "bg-white text-gray-700 border border-gray-100 rounded-tl-none"
+                      ? "bg-gray-900 text-white rounded-tr-none ml-auto" 
+                      : "bg-white text-gray-700 border border-gray-100 rounded-tl-none mr-auto"
                     }`}>
-                      <p className="leading-snug wrap-break-word">{m.texto}</p>
-                      <span className={`block text-[8px] mt-1.5 font-bold uppercase tracking-widest opacity-60`}>
+                      <p className="leading-snug">{m.texto}</p>
+                      <span className="block text-[8px] mt-1.5 font-bold uppercase tracking-widest opacity-60">
                         {m.hora}
                       </span>
                     </div>
@@ -114,9 +113,9 @@ export default function MensagensSolicitante() {
                 ))}
               </div>
 
-              {/* INPUT DE MENSAGEM - Compacto para telas estreitas */}
-              <div className="pt-3 flex gap-2 items-center">
-                <div className="flex-1 relative">
+              {/* INPUT DE MENSAGEM fixo no footer */}
+              <div className="border-t border-gray-100 pt-3 flex gap-2 items-center bg-white px-4">
+                <div className="flex-1 relative min-w-0">
                   <input
                     type="text"
                     value={newMessage}
