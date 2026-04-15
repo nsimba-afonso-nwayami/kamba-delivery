@@ -55,12 +55,12 @@ export default function HistoricoPedidos() {
     <>
       <title>Histórico | Kamba Delivery</title>
       <SolicitanteLayout title="Histórico">
-        <div className="max-w-5xl mx-auto pb-20">
+        <div className="max-w-5xl mx-auto pb-20 px-4 sm:px-6 lg:px-8">
           
           {/* HEADER */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Arquivo de Entregas</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-gray-800 tracking-tight">Arquivo de Entregas</h2>
               <p className="text-sm text-gray-500 font-medium">Consulte seus gastos e pedidos finalizados</p>
             </div>
             <button className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm text-xs font-bold text-gray-600 hover:bg-gray-50 transition-all">
@@ -70,7 +70,7 @@ export default function HistoricoPedidos() {
 
           {/* FILTROS E BUSCA */}
           <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-3 mb-8">
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-0">
               <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
               <input
                 type="text"
@@ -80,7 +80,7 @@ export default function HistoricoPedidos() {
                 className="w-full pl-11 pr-4 py-3 bg-gray-50/50 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-red-700/5 transition-all text-sm font-medium"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {["todos", "concluido", "cancelado"].map((type) => (
                 <button
                   key={type}
@@ -98,31 +98,31 @@ export default function HistoricoPedidos() {
           </div>
 
           {/* TABELA / LISTA DE HISTÓRICO */}
-          <div className="space-y-4">
+          <div className="flex flex-col space-y-4">
             {filteredHistorico.length > 0 ? (
               filteredHistorico.map((item) => (
-                <div key={item.id} className="bg-white border border-gray-100 rounded-2xl p-5 hover:border-red-100 transition-all shadow-sm">
-                  <div className="flex flex-wrap justify-between items-start gap-4">
+                <div key={item.id} className="w-full bg-white border border-gray-100 rounded-2xl p-5 hover:border-red-100 transition-all shadow-sm">
+                  <div className="flex flex-wrap justify-between items-start gap-4 w-full">
                     
                     {/* INFO PRINCIPAL */}
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 min-w-0">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg ${statusStyle[item.status]}`}>
                         <i className={`fas ${item.status === 'concluido' ? 'fa-check-double' : 'fa-ban'}`}></i>
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{item.id}</span>
                           <span className="text-[10px] text-gray-300">•</span>
                           <span className="text-xs font-bold text-gray-500">{item.data}</span>
                         </div>
-                        <h3 className="font-bold text-gray-800 text-lg leading-tight mb-2">{item.titulo}</h3>
+                        <h3 className="font-bold text-gray-800 text-lg leading-tight mb-2 break-words">{item.titulo}</h3>
                         
                         <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
+                          <div className="flex items-center gap-2 text-xs font-medium text-gray-500 break-words">
                               <i className="fas fa-circle text-[6px] text-gray-300"></i>
                               <span className="font-bold">De:</span> {item.origem}
                           </div>
-                          <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
+                          <div className="flex items-center gap-2 text-xs font-medium text-gray-500 break-words">
                               <i className="fas fa-circle text-[6px] text-red-400"></i>
                               <span className="font-bold">Para:</span> {item.destino}
                           </div>
@@ -140,13 +140,13 @@ export default function HistoricoPedidos() {
                   </div>
 
                   {/* AÇÕES DE HISTÓRICO */}
-                  <div className="mt-5 pt-4 border-t border-gray-50 flex items-center justify-between">
+                  <div className="mt-5 pt-4 border-t border-gray-50 flex items-center justify-between flex-wrap gap-3">
                     <div className="flex items-center gap-3">
                       <span className="text-[10px] font-bold text-gray-400 uppercase">Entregador:</span>
-                      <span className="text-xs font-bold text-gray-700">{item.entregador}</span>
+                      <span className="text-xs font-bold text-gray-700 break-words">{item.entregador}</span>
                     </div>
                     
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       {item.status === "concluido" && (
                         <button className="px-4 py-2 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-lg hover:bg-amber-100 transition-all uppercase tracking-tighter border border-amber-100">
                           <i className="fas fa-star mr-1"></i> Avaliar
