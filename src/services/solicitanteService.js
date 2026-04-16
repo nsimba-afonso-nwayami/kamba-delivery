@@ -10,3 +10,10 @@ export const createSolicitante = async (data) => {
 
   return response.data;
 };
+
+
+export const getSolicitante = async (id) => {
+  const response = await api.get(`solicitantes/${id}/`);
+  return response.data;
+};
+
