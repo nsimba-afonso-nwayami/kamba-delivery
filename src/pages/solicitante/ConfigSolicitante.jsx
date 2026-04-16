@@ -246,6 +246,7 @@ export default function ConfigSolicitante() {
                     <input
                       {...registerPass("current_password")}
                       type="password"
+                      placeholder="********"
                       className={inputStyle}
                     />
                     <p className="text-red-500 text-xs">
@@ -258,6 +259,7 @@ export default function ConfigSolicitante() {
                     <input
                       {...registerPass("new_password")}
                       type="password"
+                      placeholder="********"
                       className={inputStyle}
                     />
                     <p className="text-red-500 text-xs">
@@ -270,6 +272,7 @@ export default function ConfigSolicitante() {
                     <input
                       {...registerPass("confirm_password")}
                       type="password"
+                      placeholder="********"
                       className={inputStyle}
                     />
                     <p className="text-red-500 text-xs">
