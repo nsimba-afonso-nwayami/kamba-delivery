@@ -3,6 +3,9 @@ import { Routes, Route } from "react-router-dom";
 // Layout do site
 import SiteLayout from "../layouts/SiteLayout";
 
+// 
+import PrivateRoute from "../routes/PrivateRoute";
+
 //Site
 import Home from "../pages/site/Home";
 import CentroAjuda from "../pages/site/CentroAjuda";
@@ -58,7 +61,8 @@ export default function AppRoutes() {
       <Route path="/reset-password" element={<ResetPassword />} />
 
       {/*Rotas do solicitante */}
-      <Route path="/dashboard/solicitante/">
+      <Route element={<PrivateRoute allowedTypes={["SOLICITANTE"]} />}>
+        <Route path="/dashboard/solicitante/">
           <Route path="" element={<DashboardSolicitante />} />
           <Route path="pedidos" element={<MeusPedidos />} />
           <Route path="historico" element={<HistoricoPedidos />} />
@@ -66,17 +70,20 @@ export default function AppRoutes() {
           <Route path="mensagens" element={<MensagensSolicitante />} />
           <Route path="notificacoes" element={<NotificacoesSolicitante />} />
           <Route path="*" element={<NotFoundSolicitante />} />
+        </Route>
       </Route>
 
       {/*Rotas do Entregador */}
-      <Route path="/dashboard/entregador/">
-        <Route path="" element={<DashboardEntregador />} />
-        <Route path="entregas" element={<Entregas />} />
-        <Route path="historico" element={<HistoricoEntregador />} />
-        <Route path="configuracoes" element={<ConfigEntregador />} />
-        <Route path="mensagens" element={<MensagensEntregador />} />
-        <Route path="notificacoes" element={<NotificacoesEntregador />} />
-        <Route path="*" element={<NotFoundEntregador />} />
+      <Route element={<PrivateRoute allowedTypes={["ENTREGADOR"]} />}>
+        <Route path="/dashboard/entregador/">
+          <Route path="" element={<DashboardEntregador />} />
+          <Route path="entregas" element={<Entregas />} />
+          <Route path="historico" element={<HistoricoEntregador />} />
+          <Route path="configuracoes" element={<ConfigEntregador />} />
+          <Route path="mensagens" element={<MensagensEntregador />} />
+          <Route path="notificacoes" element={<NotificacoesEntregador />} />
+          <Route path="*" element={<NotFoundEntregador />} />
+        </Route>
       </Route>
     </Routes>
   );
