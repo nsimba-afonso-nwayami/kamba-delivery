@@ -5,21 +5,9 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { loginSchema } from "../../validations/loginSchema";
 import { loginUser } from "../../services/authService";
 import toast from "react-hot-toast";
-import { useAuth } from "../../contexts/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-
-  useEffect(() => {
-    if (user) {
-      if (user.tipo === "SOLICITANTE") {
-        navigate("/dashboard/solicitante", { replace: true });
-      } else if (user.tipo === "ENTREGADOR") {
-        navigate("/dashboard/entregador", { replace: true });
-      }
-    }
-  }, [user, navigate]);
 
   const btnPrimary =
     "w-full bg-red-700 text-white py-4 rounded-xl font-bold text-center shadow-lg shadow-red-700/20 hover:bg-red-800 transition-all duration-300 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2";
@@ -53,15 +41,13 @@ export default function Login() {
 
       const tipo = response?.tipo;
 
-      setTimeout(() => {
-        if (tipo === "SOLICITANTE") {
-          navigate("/dashboard/solicitante", { replace: true });
-        } else if (tipo === "ENTREGADOR") {
-          navigate("/dashboard/entregador", { replace: true });
-        } else {
-          navigate("/", { replace: true });
-        }
-      }, 1500);
+      if (response.tipo === "SOLICITANTE") {
+        navigate("/dashboard/solicitante", { replace: true });
+      } else if (response.tipo === "ENTREGADOR") {
+        navigate("/dashboard/entregador", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
 
     } catch (error) {
       console.log("=== LOGIN ERROR ===");
