@@ -9,36 +9,39 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = !!localStorage.getItem("access_token");
 
+  const loadUser = async () => {
+    const token = localStorage.getItem("access_token");
+    const userId = localStorage.getItem("user_id");
+
+    if (!token || !userId) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const userData = await getUsuarioById(userId);
+
+      setUser({
+        ...userData,
+        tipo: localStorage.getItem("tipo"),
+      });
+    } catch (error) {
+      console.log("Erro ao carregar usuário:", error);
+      localStorage.clear();
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadUser = async () => {
-      const token = localStorage.getItem("access_token");
-      const userId = localStorage.getItem("user_id");
-
-      if (!token || !userId) {
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const userData = await getUsuarioById(userId);
-
-        setUser({
-          ...userData,
-          tipo: localStorage.getItem("tipo"),
-        });
-      } catch (error) {
-        console.log("Erro ao carregar usuário:", error);
-
-        localStorage.clear();
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadUser();
   }, []);
+
+  const refreshUser = async () => {
+    await loadUser();
+  };
 
   const logout = () => {
     localStorage.clear();
@@ -54,6 +57,7 @@ export function AuthProvider({ children }) {
         loading,
         isAuthenticated,
         logout,
+        refreshUser,
       }}
     >
       {children}
