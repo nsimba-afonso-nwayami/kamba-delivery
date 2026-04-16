@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../../../contexts/AuthContext";
 
 export default function HeaderEntregador({ sidebarOpen, setSidebarOpen, title }) {
+  const { user } = useAuth();
+
   // Estilo padrão para os botões de ação do header
   const actionBtnStyle = "relative w-10 h-10 cursor-pointer flex items-center justify-center rounded-xl bg-red-800 hover:bg-red-700 text-rose-100 transition-all duration-300 shadow-sm group";
   
@@ -60,10 +63,10 @@ export default function HeaderEntregador({ sidebarOpen, setSidebarOpen, title })
         <div className="flex items-center gap-3 group cursor-pointer">
           <div className="text-right hidden lg:block">
             <p className="text-sm text-white font-bold leading-none">
-              Nome do Usuário
+              {user?.nome || "Usuário"}
             </p>
             <p className="text-[10px] text-rose-300/60 uppercase font-black tracking-widest mt-1">
-              Entregador
+              {user?.tipo || "Entregador"}
             </p>
           </div>
 
