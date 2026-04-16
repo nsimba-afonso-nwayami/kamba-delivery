@@ -1,7 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../../../contexts/AuthContext";
 
 export default function SidebarEntregador({ sidebarOpen, setSidebarOpen }) {
   const location = useLocation();
+  const { logout } = useAuth();
 
   const isActive = (path) => location.pathname === path;
 
@@ -126,7 +128,7 @@ export default function SidebarEntregador({ sidebarOpen, setSidebarOpen }) {
 
         {/* LOGOUT */}
         <div className="pt-6 border-t border-red-800/50">
-          <button className="flex items-center gap-3 cursor-pointer w-full px-4 py-3 rounded-xl text-rose-200/60 hover:text-white hover:bg-red-600 transition-all font-bold text-sm group">
+          <button onClick={logout} className="flex items-center gap-3 cursor-pointer w-full px-4 py-3 rounded-xl text-rose-200/60 hover:text-white hover:bg-red-600 transition-all font-bold text-sm group">
             <i className="fas fa-arrow-right-from-bracket group-hover:translate-x-1 transition-transform"></i>
             Sair da conta
           </button>
