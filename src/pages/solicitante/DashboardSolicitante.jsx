@@ -567,9 +567,8 @@ export default function DashboardSolicitante() {
                  Cancelar
                </button>
                <button 
-                 type="submit" 
-                 onClick={() => getRoute(pickupCoords, dropoffCoords)}
-                 disabled={loadingRoute || !pickupCoords || !dropoffCoords}
+                 type="submit"
+                 disabled={loadingRoute}
                  className="flex-2 cursor-pointer py-4 bg-red-700 text-white font-black rounded-2xl shadow-lg shadow-red-700/20 hover:bg-red-800 transition-all disabled:opacity-60"
                >
                 {loading ? "Criando pedido..." : "Confirmar e Buscar Entregador"}
