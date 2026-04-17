@@ -6,8 +6,9 @@ export default function PrivateRoute({ allowedTypes }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Carregando...
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <i className="fas fa-spinner animate-spin text-red-700 text-5xl mb-4"></i>
+              <p className="text-red-600 text-2xl font-semibold">Carregando...</p>
       </div>
     );
   }
