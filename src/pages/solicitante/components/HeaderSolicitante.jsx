@@ -1,8 +1,14 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { getNotificacoes } from "../../../services/notificacoesService";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useNotificacoesRealtime } from "../../../hooks/useNotificacoesRealtime";
 
 export default function HeaderSolicitante({ sidebarOpen, setSidebarOpen, title }) {
   const { user } = useAuth();
+  const [notificacoesCount, setNotificacoesCount] = useState(0);
+
+  useNotificacoesRealtime(user?.id, setNotificacoesCount);
 
   // Estilo padrão para os botões de ação do header
   const actionBtnStyle = "relative w-10 h-10 cursor-pointer flex items-center justify-center rounded-xl bg-red-800 hover:bg-red-700 text-rose-100 transition-all duration-300 shadow-sm group";
@@ -51,9 +57,11 @@ export default function HeaderSolicitante({ sidebarOpen, setSidebarOpen, title }
         {/* NOTIFICAÇÕES */}
         <Link to="/dashboard/solicitante/notificacoes" className={actionBtnStyle}>
           <i className="fas fa-bell text-lg"></i>
-          <span className={badgeStyle}>
-            5
-          </span>
+          {notificacoesCount > 0 && (
+            <span className={badgeStyle}>
+              {notificacoesCount}
+            </span>
+          )}
         </Link>
 
         {/* DIVIDER */}
