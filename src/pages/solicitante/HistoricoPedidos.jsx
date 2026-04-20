@@ -1,42 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SolicitanteLayout from "./components/SolicitanteLayout";
+import { getPedidos } from "../../services/pedidosService";
+import { formatPrice } from "../../utils/formatPrice";
 
 export default function HistoricoPedidos() {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("todos");
+  const [historico, setHistorico] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+  const INITIAL_COUNT = 6;
 
-  const historico = [
-    {
-      id: "KD-9821",
-      titulo: "Entrega de Peças Automotivas",
-      data: "12 de Março, 2026",
-      valor: "4.500 Kz",
-      status: "concluido",
-      origem: "Viana, Estalagem",
-      destino: "Kilamba, Quarteirão A",
-      entregador: "Mateus Silva"
-    },
-    {
-      id: "KD-9750",
-      titulo: "Documentos Jurídicos",
-      data: "10 de Março, 2026",
-      valor: "2.800 Kz",
-      status: "cancelado",
-      origem: "Ingombotas, Rua Rainha Ginga",
-      destino: "Talatona, Via AL15",
-      entregador: "N/A"
-    },
-    {
-      id: "KD-9612",
-      titulo: "Compras de Supermercado",
-      data: "05 de Março, 2026",
-      valor: "3.200 Kz",
-      status: "concluido",
-      origem: "Maianga, Hipermercado",
-      destino: "Samba, Condomínio Girassol",
-      entregador: "António Manuel"
-    }
-  ];
+  useEffect(() => {
+    const loadHistorico = async () => {
+      try {
+        const data = await getPedidos();
+
+        const formatados = data
+          // só histórico (entregue ou cancelado)
+          .filter((p) => ["ENTREGUE", "CANCELADO"].includes(p.status))
+          .map((p) => ({
+            id: p.id.slice(0, 8), // manter estilo curto tipo KD-xxxx
+            titulo: p.titulo,
+            data: new Date(p.criado_em).toLocaleDateString("pt-PT", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            }),
+            valor: Number(p.valor_final || p.valor_sugerido),
+            status: p.status === "ENTREGUE" ? "concluido" : "cancelado",
+            origem: p.origem_endereco,
+            destino: p.destino_endereco,
+            entregador: p.entregador ? "Motorista atribuído" : "N/A",
+          }));
+
+        setHistorico(formatados);
+      } catch (err) {
+        console.log("Erro ao carregar histórico:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHistorico();
+  }, []);
 
   const statusStyle = {
     concluido: "bg-emerald-50 text-emerald-700 border-emerald-100",
@@ -50,6 +57,10 @@ export default function HistoricoPedidos() {
                       item.status === "cancelado";
     return matchSearch && matchType;
   });
+
+  const historicoExibido = showAll
+    ? filteredHistorico
+    : filteredHistorico.slice(0, INITIAL_COUNT);
 
   return (
     <>
@@ -73,7 +84,7 @@ export default function HistoricoPedidos() {
             <div className="relative flex-1 min-w-0">
               <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
               <input
-                type="text"
+                type="search"
                 placeholder="Buscar por código ou descrição..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -85,7 +96,7 @@ export default function HistoricoPedidos() {
                 <button
                   key={type}
                   onClick={() => setFilterType(type)}
-                  className={`px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
+                  className={`px-5 py-3 cursor-pointer rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
                     filterType === type 
                     ? "bg-red-700 text-white shadow-md shadow-red-200" 
                     : "bg-gray-50 text-gray-500 hover:bg-gray-100"
@@ -97,10 +108,17 @@ export default function HistoricoPedidos() {
             </div>
           </div>
 
-          {/* TABELA / LISTA DE HISTÓRICO */}
+          {loading && (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+              <i className="fas fa-spinner animate-spin text-red-700 text-3xl mb-4"></i>
+              <p className="text-red-600 text-sm font-semibold">Carregando pedidos...</p>
+            </div>
+          )}
+
+          {/*LISTA DE HISTÓRICO */}
           <div className="flex flex-col space-y-4">
             {filteredHistorico.length > 0 ? (
-              filteredHistorico.map((item) => (
+              historicoExibido.map((item) => (
                 <div key={item.id} className="w-full bg-white border border-gray-100 rounded-2xl p-5 hover:border-red-100 transition-all shadow-sm">
                   <div className="flex flex-wrap justify-between items-start gap-4 w-full">
                     
@@ -132,7 +150,7 @@ export default function HistoricoPedidos() {
 
                     {/* VALOR E STATUS */}
                     <div className="text-right">
-                      <p className="text-lg font-bold text-gray-800">{item.valor}</p>
+                      <p className="text-lg font-bold text-gray-800">{formatPrice(item.valor)}</p>
                       <span className={`inline-block mt-1 text-[10px] font-bold px-3 py-1 rounded-full border uppercase ${statusStyle[item.status]}`}>
                         {item.status}
                       </span>
@@ -152,9 +170,6 @@ export default function HistoricoPedidos() {
                           <i className="fas fa-star mr-1"></i> Avaliar
                         </button>
                       )}
-                      <button className="px-4 py-2 bg-gray-900 text-white text-[10px] font-bold rounded-lg hover:bg-red-700 transition-all uppercase tracking-tighter shadow-sm">
-                        Reencomendar
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -166,6 +181,17 @@ export default function HistoricoPedidos() {
               </div>
             )}
           </div>
+
+          {filteredHistorico.length > INITIAL_COUNT && (
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={() => setShowAll((prev) => !prev)}
+                  className="px-6 py-3 cursor-pointer bg-gray-900 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-all uppercase tracking-widest shadow-lg"
+                >
+                  {showAll ? "Ver menos" : "Ver mais"}
+                </button>
+              </div>
+            )}
         </div>
       </SolicitanteLayout>
     </>
