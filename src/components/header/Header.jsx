@@ -1,11 +1,26 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { HashLink } from "react-router-hash-link";
+import { useAuth } from "../../contexts/AuthContext";
 import Logo from "../../assets/img/logo2.png";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
+
+  const getDashboardLink = () => {
+    switch (user?.tipo) {
+      case "SOLICITANTE":
+        return "/dashboard/solicitante";
+      case "ENTREGADOR":
+        return "/dashboard/entregador";
+      case "ADMIN":
+        return "/dashboard/admin";
+      default:
+        return "/";
+    }
+  };
 
   // Controle de scroll para efeito de transparência e elevação
   useEffect(() => {
@@ -83,32 +98,56 @@ export default function Header() {
             Entregador
           </HashLink>
 
-          <Link to="/dashboard/solicitante/" className={navLinkStyles} onClick={() => setMenuOpen(false)}>
-            Ver
-          </Link>
-
           {/* ÁREA DE BOTÕES */}
           <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto mt-4 md:mt-0 pt-6 md:pt-0 border-t md:border-none border-rose-200">
             
-            {/* Botão Entrar - Estilo Ghost visível */}
-            <Link
-              to="/login"
-              className="border-2 border-rose-500 text-red-700 px-7 py-2.5 rounded-xl font-bold text-center hover:bg-rose-200 hover:border-red-700 transition-all duration-300 flex items-center justify-center gap-2"
-              onClick={() => setMenuOpen(false)}
-            >
-              <i className="far fa-user"></i>
-              Entrar
-            </Link>
+            {isAuthenticated && user ? (
+              <>
+                {/* Dashboard dinâmico */}
+                <Link
+                  to={getDashboardLink()}
+                  className="bg-red-700 text-white px-7 py-2.5 rounded-xl font-bold text-center shadow-lg shadow-red-700/20 hover:bg-red-900 transition-all flex items-center justify-center gap-2"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <i className="fas fa-tachometer-alt"></i>
+                  Dashboard
+                </Link>
 
-            {/* Botão Cadastrar - Destaque total */}
-            <Link
-              to="/register"
-              className="bg-red-700 text-white px-8 py-2.5 rounded-xl font-bold text-center shadow-lg shadow-red-700/20 hover:bg-red-900 hover:shadow-red-900/30 transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
-              onClick={() => setMenuOpen(false)}
-            >
-              <span>Cadastrar</span>
-              <i className="fas fa-arrow-right text-xs"></i>
-            </Link>
+                {/* Logout */}
+                <button
+                  onClick={() => {
+                    logout();
+                    setMenuOpen(false);
+                  }}
+                  className="border-2 border-rose-500 cursor-pointer text-red-700 px-7 py-2.5 rounded-xl font-bold hover:bg-rose-200 transition-all flex items-center justify-center gap-2"
+                >
+                  <i className="fas fa-right-from-bracket"></i>
+                  Sair
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Botão Entrar */}
+                <Link
+                  to="/login"
+                  className="border-2 border-rose-500 text-red-700 px-7 py-2.5 rounded-xl font-bold text-center hover:bg-rose-200 transition-all flex items-center justify-center gap-2"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <i className="far fa-user"></i>
+                  Entrar
+                </Link>
+
+                {/* Botão Cadastrar */}
+                <Link
+                  to="/register"
+                  className="bg-red-700 text-white px-8 py-2.5 rounded-xl font-bold text-center shadow-lg shadow-red-700/20 hover:bg-red-900 transition-all active:scale-95 flex items-center justify-center gap-2"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <span>Cadastrar</span>
+                  <i className="fas fa-arrow-right text-xs"></i>
+                </Link>
+              </>
+            )}
           </div>
         </nav>
       </div>
