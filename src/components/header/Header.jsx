@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { HashLink } from "react-router-hash-link";
+import Logo from "../../assets/img/logo2.png";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -27,12 +28,20 @@ export default function Header() {
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6">
 
         {/* LOGO */}
-        <Link to="/" className="text-2xl font-black tracking-tighter text-red-700 flex items-center gap-2">
+        <Link to="/" className="flex items-center">
+          <img 
+            src={Logo} 
+            alt="Kamba Delivery" 
+            className="h-22 md:h-20 w-auto object-contain"
+          />
+        </Link>
+
+         {/*<Link to="/" className="text-2xl font-black tracking-tighter text-red-700 flex items-center gap-2">
           <div className="bg-red-700 text-white p-1.5 rounded-lg">
             <i className="fas fa-truck-fast"></i>
           </div>
           <span>Kamba<span className="text-red-900">Delivery</span></span>
-        </Link>
+        </Link>*/}
 
         {/* BOTÃO MOBILE */}
         <button
