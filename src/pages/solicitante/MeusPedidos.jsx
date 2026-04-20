@@ -454,7 +454,7 @@ export default function MeusPedidos() {
                         <i className="fas fa-phone"></i>
                         <span className="text-[10px] font-bold uppercase tracking-widest">Ligar</span>
                       </a>
-                      <a href={`https://wa.me/${selectedPedido.entregador.whatsapp}`} target="_blank" rel="noreferrer" className="flex-1 sm:flex-none h-12 px-5 flex items-center justify-center gap-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all active:scale-95 border border-green-100">
+                      <a href={`https://wa.me/${selectedPedido.entregador.telefone}`} target="_blank" rel="noreferrer" className="flex-1 sm:flex-none h-12 px-5 flex items-center justify-center gap-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all active:scale-95 border border-green-100">
                         <i className="fab fa-whatsapp text-lg"></i>
                         <span className="text-[10px] font-bold uppercase tracking-widest">Zap</span>
                       </a>
