@@ -298,6 +298,7 @@ export default function MeusPedidos() {
             <div className="relative flex-1 min-w-0">
               <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
               <input
+                type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por ID ou título..."
