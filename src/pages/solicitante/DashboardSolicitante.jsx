@@ -6,6 +6,8 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap } fro
 import "leaflet/dist/leaflet.css";
 import toast from "react-hot-toast";
 import { createPedido } from "../../services/pedidosService";
+import { createNotificacao } from "../../services/notificacoesService";
+import { getUsuarios } from "../../services/usuariosService";
 import { formatPrice } from "../../utils/formatPrice";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -203,6 +205,34 @@ export default function DashboardSolicitante() {
       await createPedido(payload);
 
       toast.success("Pedido criado com sucesso!");
+
+      // Notificação para o solicitante
+      await createNotificacao({
+        titulo: "Pedido criado",
+        mensagem: `Seu pedido "${data.titulo}" foi criado com sucesso!`,
+        usuario: user?.id,
+      });
+
+      // Notificação para todos os entregadores
+      try {
+        const usuarios = await getUsuarios();
+
+        const entregadores = usuarios.filter(
+          (u) => u.tipo === "ENTREGADOR"
+        );
+
+        await Promise.all(
+          entregadores.map((entregador) =>
+            createNotificacao({
+              titulo: "Novo pedido disponível",
+              mensagem: `Novo pedido: "${data.titulo}". Veja na lista de entregas.`,
+              usuario: entregador.id,
+            })
+          )
+        );
+      } catch (err) {
+        console.error("Erro ao notificar entregadores:", err);
+      }
 
       reset(); // limpa form
       setPickup("");
