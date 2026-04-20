@@ -1,39 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SolicitanteLayout from "./components/SolicitanteLayout";
+import { getNotificacoes } from "../../services/notificacoesService";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function NotificacoesSolicitante() {
-  const [notificacoes, setNotificacoes] = useState([
-    {
-      id: 1,
-      tipo: "pedido",
-      titulo: "Pedido em rota!",
-      descricao: "O entregador Carlos Miguel já recolheu seu pedido e está a caminho.",
-      horario: "Há 5 min",
-      lida: false,
-      icon: "fa-motorcycle",
-      color: "text-blue-600 bg-blue-50"
-    },
-    {
-      id: 2,
-      tipo: "promo",
-      titulo: "Cupom de Desconto",
-      descricao: "Use o código KAMBA500 para ganhar 500 Kz de desconto na próxima entrega.",
-      horario: "Há 1 hora",
-      lida: false,
-      icon: "fa-ticket-alt",
-      color: "text-amber-600 bg-amber-50"
-    },
-    {
-      id: 3,
-      tipo: "seguranca",
-      titulo: "Login Detectado",
-      descricao: "Um novo acesso foi realizado na sua conta a partir de um dispositivo Chrome em Luanda.",
-      horario: "Ontem, 18:40",
-      lida: true,
-      icon: "fa-shield",
-      color: "text-emerald-600 bg-emerald-50"
-    }
-  ]);
+  const { user } = useAuth();
+  const [notificacoes, setNotificacoes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+  const INITIAL_COUNT = 6;
+
+  useEffect(() => {
+    const fetchNotificacoes = async () => {
+      try {
+        setLoading(true);
+
+        const data = await getNotificacoes();
+
+        const minhas = data.filter(
+          (n) => n.usuario === user?.id
+        );
+
+        const formatted = minhas.map((n, index) => ({
+          id: index + 1,
+          tipo: "system",
+          titulo: n.titulo,
+          descricao: n.mensagem,
+          horario: "Agora",
+          lida: false,
+          icon: "fa-bell",
+          color: "text-red-600 bg-red-50"
+        }));
+
+        setNotificacoes(formatted);
+
+      } catch (err) {
+        console.error("Erro ao buscar notificações:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.id) fetchNotificacoes();
+
+  }, [user?.id]);
 
   const marcarComoLida = (id) => {
     setNotificacoes(notificacoes.map(n => n.id === id ? { ...n, lida: true } : n));
@@ -42,6 +52,11 @@ export default function NotificacoesSolicitante() {
   const limparTodas = () => {
     setNotificacoes([]);
   };
+
+  // LISTA EXIBIDA (LIMITADA)
+  const notificacoesExibidas = showAll
+    ? notificacoes
+    : notificacoes.slice(0, INITIAL_COUNT);
 
   return (
     <>
@@ -65,9 +80,18 @@ export default function NotificacoesSolicitante() {
             )}
           </div>
 
+          {loading && (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+              <i className="fas fa-spinner animate-spin text-red-700 text-3xl mb-4"></i>
+              <p className="text-red-600 text-sm font-semibold">
+                Carregando notificações...
+              </p>
+            </div>
+          )}
+
           {/* LISTA DE NOTIFICAÇÕES */}
           <div className="space-y-3">
-            {notificacoes.length > 0 ? (
+            {!loading && notificacoesExibidas.length > 0 ? (
               notificacoes.map((n) => (
                 <div 
                   key={n.id}
@@ -117,6 +141,17 @@ export default function NotificacoesSolicitante() {
               </div>
             )}
           </div>
+
+          {!loading && notificacoes.length > INITIAL_COUNT && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={() => setShowAll((prev) => !prev)}
+                className="px-6 py-3 cursor-pointer bg-gray-900 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-all uppercase tracking-widest shadow-lg"
+              >
+                {showAll ? "Ver menos notificações" : "Ver mais notificações"}
+              </button>
+            </div>
+          )}
         </div>
       </SolicitanteLayout>
     </>
