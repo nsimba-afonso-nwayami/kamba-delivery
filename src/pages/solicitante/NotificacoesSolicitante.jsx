@@ -117,20 +117,6 @@ export default function NotificacoesSolicitante() {
               </div>
             )}
           </div>
-
-          {/* DICA DE CONFIGURAÇÃO */}
-          {notificacoes.length > 0 && (
-            <div className="mt-8 p-6 bg-gray-900 rounded-3xl flex items-center justify-between overflow-hidden relative">
-              <div className="relative z-10">
-                <h4 className="text-white font-bold text-sm">Gerenciar Alertas</h4>
-                <p className="text-gray-400 text-xs font-medium">Escolha como quer receber seus avisos.</p>
-              </div>
-              <button className="relative z-10 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold rounded-xl transition-all uppercase tracking-widest border border-white/10">
-                Configurar
-              </button>
-              <i className="fas fa-cog absolute -right-4 -bottom-4 text-6xl text-white/5 rotate-12"></i>
-            </div>
-          )}
         </div>
       </SolicitanteLayout>
     </>
