@@ -1,22 +1,51 @@
 import { useState, useEffect } from "react";
 import SolicitanteLayout from "./components/SolicitanteLayout";
 import Modal from "./components/Modal";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { getPedidos } from "../../services/pedidosService";
+import { getPedidos, cancelarPedido } from "../../services/pedidosService";
+import { getUsuarioById } from "../../services/usuariosService";
 import { formatPrice } from "../../utils/formatPrice";
+import toast from "react-hot-toast";
 
 export default function MeusPedidos() {
-  const [pedidos, setPedidos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // ESTADO DA PÁGINA
+  const [pedidos, setPedidos] = useState([]);          // lista de pedidos da API
+  const [loading, setLoading] = useState(true);        // loading inicial
+  const [showAll, setShowAll] = useState(false);       // controlar "ver mais"
+  const INITIAL_COUNT = 6;                              // limite inicial da lista
+  const [search, setSearch] = useState("");            // busca
+  const [statusFilter, setStatusFilter] = useState("todos"); // filtro status
+  const [selectedPedido, setSelectedPedido] = useState(null); // pedido aberto no modal
+  const [progress, setProgress] = useState(0);         // progresso da entrega (mapa)
+  const [routeInfo, setRouteInfo] = useState(null);     // info da rota (OSRM)
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("todos");
+  useEffect(() => {
+    const loadRoute = async () => {
+      if (!selectedPedido) return;
 
-  const [selectedPedido, setSelectedPedido] = useState(null);
+      const origem = [
+        selectedPedido.origem_latitude,
+        selectedPedido.origem_longitude,
+      ];
 
-  const [progress, setProgress] = useState(0);
+      const destino = [
+        selectedPedido.destino_latitude,
+        selectedPedido.destino_longitude,
+      ];
 
+      const info = await calcularRotaOSRM(origem, destino);
+
+      setRouteInfo(info);
+    };
+
+    loadRoute();
+  }, [selectedPedido]);
+
+
+  // AJUDA DO MAPA (LEAFLET)
+
+  // Corrige bug de renderização do mapa no modal
   function FixMapSize() {
     const map = useMap();
 
@@ -29,14 +58,57 @@ export default function MeusPedidos() {
     return null;
   }
 
+
+  // Ajusta zoom automático entre origem e destino
+  function FitBounds({ origem, destino }) {
+    const map = useMap();
+
+    useEffect(() => {
+      if (!origem || !destino) return;
+
+      const bounds = [origem, destino];
+
+      setTimeout(() => {
+        map.fitBounds(bounds, {
+          padding: [60, 60],
+          maxZoom: 15,
+        });
+      }, 200);
+    }, [origem, destino, map]);
+
+    return null;
+  }
+
+  // CARREGAR PEDIDOS
   useEffect(() => {
     const fetchPedidos = async () => {
       try {
         const data = await getPedidos();
 
-        console.log("PEDIDOS:", data);
+        // ENRIQUECER pedidos com dados do entregador
+        const pedidosComEntregador = await Promise.all(
+          data.map(async (pedido) => {
 
-        setPedidos(data);
+            // se API só manda ID do entregador
+            if (pedido.entregador && typeof pedido.entregador === "number") {
+              try {
+                const usuario = await getUsuarioById(pedido.entregador);
+
+                return {
+                  ...pedido,
+                  entregadorData: usuario, // aqui fica o objeto completo
+                };
+              } catch {
+                return pedido; // fallback se falhar API
+              }
+            }
+
+            return pedido;
+          })
+        );
+
+        setPedidos(pedidosComEntregador);
+
       } catch (err) {
         console.log("Erro ao buscar pedidos:", err);
       } finally {
@@ -47,6 +119,7 @@ export default function MeusPedidos() {
     fetchPedidos();
   }, []);
 
+  // NORMALIZA STATUS
   const mapStatus = (status) => {
     switch (status) {
       case "AGUARDANDO_PROPOSTAS":
@@ -62,6 +135,7 @@ export default function MeusPedidos() {
     }
   };
 
+  // CONFIG VISUAL DOS STATUS
   const statusConfig = {
     pendente: {
       label: "Pendente",
@@ -80,82 +154,80 @@ export default function MeusPedidos() {
     },
     cancelado: {
       label: "Cancelado",
-      icon: "fa-xmark",
+      icon: "fa-circle-xmark",
       style: "bg-red-100 text-red-700 border-red-200",
     },
   };
 
+  // FILTRAR PEDIDOS
   const filteredPedidos = pedidos.filter((p) => {
     const uiStatus = mapStatus(p.status);
 
+    // remove cancelados desta página (vão para histórico)
+    if (uiStatus === "cancelado") return false;
+
+    // busca por texto
     const matchSearch =
       p.titulo?.toLowerCase().includes(search.toLowerCase()) ||
       p.id?.toLowerCase().includes(search.toLowerCase());
 
+    // filtro de status
     const matchStatus =
       statusFilter === "todos" ? true : uiStatus === statusFilter;
 
     return matchSearch && matchStatus;
   });
 
-  const calcularDistancia = (coords1, coords2) => {
-    if (!coords1 || !coords2) return 0;
+  // CALCULAR ROTA (OSRM)
+  const calcularRotaOSRM = async (origem, destino) => {
+    if (!origem || !destino) return null;
 
-    const [lat1, lon1] = coords1;
-    const [lat2, lon2] = coords2;
+    try {
+      const res = await fetch(
+        `https://router.project-osrm.org/route/v1/driving/` +
+        `${origem[1]},${origem[0]};${destino[1]},${destino[0]}?overview=false`
+      );
 
-    const R = 6371;
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
+      const data = await res.json();
 
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(lat1 * (Math.PI / 180)) *
-        Math.cos(lat2 * (Math.PI / 180)) *
-        Math.sin(dLon / 2) ** 2;
+      if (!data.routes || data.routes.length === 0) return null;
 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const route = data.routes[0];
 
-    return R * c;
-  };
+      return {
+        distanciaKm: route.distance / 1000,
+        tempoMin: Math.round(route.duration / 60),
+      };
 
-  const calcularPreco = (distancia) => {
-    const base = 500;
-    const taxaKm = 200;
-    const total = base + distancia * taxaKm;
-
-    return total
-      .toLocaleString("pt-AO", {
-        style: "currency",
-        currency: "AOA",
-      })
-      .replace("AOA", "Kz");
-  };
-
-  const calcularTempoEstimado = (distanciaKm) => {
-    const velocidadeMedia = 30; // km/h (entregador urbano)
-    const horas = distanciaKm / velocidadeMedia;
-    return Math.max(1, Math.round(horas * 60)); // minutos
-  };
-
-  useEffect(() => {
-    if (!selectedPedido || selectedPedido.status !== "EM_ROTA") {
-      setProgress(0);
-      return;
+    } catch (err) {
+      console.log("Erro OSRM:", err);
+      return null;
     }
+  };
 
-    const interval = setInterval(() => {
-      setProgress((p) => (p >= 100 ? 100 : p + 2));
-    }, 1000);
+  // FORMATAR TEMPO
+  const formatTempo = (min) => {
+    if (min < 60) return `${Math.round(min)} min`;
 
-    return () => clearInterval(interval);
-  }, [selectedPedido]);
+    const h = Math.floor(min / 60);
+    const m = Math.round(min % 60);
 
+    return `${h}h ${m}min`;
+  };
+
+  // CALCULAR POSIÇÃO DO ENTREGADOR
   const getDriverPosition = (pedido) => {
-    if (!pedido?.origemCoords || !pedido?.destinoCoords) return null;
+    if (!pedido) return null;
 
-    const [lat1, lng1] = pedido.origemCoords;
-    const [lat2, lng2] = pedido.destinoCoords;
+    const [lat1, lng1] = [
+      pedido.origem_latitude,
+      pedido.origem_longitude,
+    ];
+
+    const [lat2, lng2] = [
+      pedido.destino_latitude,
+      pedido.destino_longitude,
+    ];
 
     return [
       lat1 + (lat2 - lat1) * (progress / 100),
@@ -163,16 +235,9 @@ export default function MeusPedidos() {
     ];
   };
 
-  const distanciaKm = selectedPedido
-    ? calcularDistancia(
-        selectedPedido.origemCoords,
-        selectedPedido.destinoCoords
-      )
-    : 0;
-
-  const tempoMin = selectedPedido
-    ? calcularTempoEstimado(distanciaKm)
-    : 0;
+  // VALORES DERIVADOS
+  const distanciaKm = routeInfo?.distanciaKm || 0;
+  const tempoMin = routeInfo?.tempoMin || 0;
 
   const precoInicial = selectedPedido
     ? Number(selectedPedido.valor_sugerido || 0)
@@ -181,6 +246,35 @@ export default function MeusPedidos() {
   const precoFinal = selectedPedido?.valor_final
     ? Number(selectedPedido.valor_final)
     : null;
+
+  // LISTA EXIBIDA
+  const pedidosExibidos = showAll
+    ? filteredPedidos
+    : filteredPedidos.slice(0, INITIAL_COUNT);
+
+  // CANCELAR PEDIDO
+  const handleCancelarPedido = async (id) => {
+    try {
+      await cancelarPedido(id);
+
+      // atualiza UI sem reload
+      setPedidos((prev) =>
+        prev.map((p) =>
+          p.id === id ? { ...p, status: "CANCELADO" } : p
+        )
+      );
+
+      toast.success("Pedido cancelado com sucesso");
+
+    } catch (err) {
+      console.log("Erro ao cancelar pedido:", err);
+
+      toast.error(
+        err.response?.data?.detail ||
+        "Erro ao cancelar pedido"
+      );
+    }
+  };
 
   return (
     <>
@@ -245,7 +339,7 @@ export default function MeusPedidos() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-5">
-              {filteredPedidos.map((pedido) => {
+              {pedidosExibidos.map((pedido) => {
                   const uiStatus = mapStatus(pedido.status);
                   const precoTotal = pedido.valor_sugerido;
 
@@ -308,8 +402,11 @@ export default function MeusPedidos() {
                             {uiStatus === "entregue" ? "Ver Detalhes" : "Rastrear Rota"}
                           </button>
 
-                          {(uiStatus === "pendente" || uiStatus === "EM_ROTA") && (
-                            <button className="px-6 py-3 cursor-pointer bg-white text-rose-600 text-[11px] font-bold rounded-xl hover:bg-rose-50 transition-all uppercase tracking-widest border border-rose-100">
+                          {pedido.status === "AGUARDANDO_PROPOSTAS" && (
+                            <button
+                              onClick={() => handleCancelarPedido(pedido.id)}
+                              className="px-6 py-3 cursor-pointer bg-white text-rose-600 text-[11px] font-bold rounded-xl hover:bg-rose-50 transition-all uppercase tracking-widest border border-rose-100"
+                            >
                               Cancelar
                             </button>
                           )}
@@ -326,7 +423,7 @@ export default function MeusPedidos() {
                             <img src={pedido.entregador.foto} className="w-8 h-8 rounded-xl object-cover" />
                             <div>
                               <p className="text-[9px] font-bold text-gray-400 uppercase leading-none mb-1">Entregador</p>
-                              <p className="text-xs font-bold text-gray-800 leading-none">{pedido.entregador.nome}</p>
+                              <p className="text-xs font-bold text-gray-800 leading-none">{pedido.entregadorData?.nome}</p>
                             </div>
                           </div>
                         )}
@@ -334,6 +431,17 @@ export default function MeusPedidos() {
                     </div>
                   );
                 })}
+            </div>
+          )}
+
+          {filteredPedidos.length > INITIAL_COUNT && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={() => setShowAll((prev) => !prev)}
+                className="px-6 py-3 cursor-pointer bg-gray-900 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-all uppercase tracking-widest shadow-lg"
+              >
+                {showAll ? "Ver menos pedidos" : "Ver mais pedidos"}
+              </button>
             </div>
           )}
 
@@ -363,8 +471,8 @@ export default function MeusPedidos() {
                       Preço final
                     </p>
 
-                    <p className="text-lg font-black leading-none">
-                      {precoFinal ? formatPrice(precoFinal) : "A calcular..."}
+                    <p className="text-lg font-bold leading-none">
+                      {precoFinal ? formatPrice(precoFinal) : "A aguardar proposta..."}
                     </p>
                   </div>
 
@@ -379,26 +487,79 @@ export default function MeusPedidos() {
                     </p>
 
                     <p className="text-xs text-gray-500 mt-1">
-                      ~ {tempoMin} min estimado
+                      ~ {formatTempo(tempoMin)} estimado
                     </p>
                   </div>
 
                 </div>
 
                 {/* MAPA */}
-                <div className="w-full h-64 rounded-3xl overflow-hidden border-4 border-white shadow-xl relative z-0">
-                  <MapContainer center={selectedPedido.origemCoords} zoom={13} className="h-full w-full">
+                <div className="w-full h-100 rounded-3xl overflow-hidden border-4 border-white shadow-xl relative z-0">
+                  {selectedPedido?.origem_latitude && selectedPedido?.destino_latitude ? (
+                    <MapContainer
+                      center={[
+                        selectedPedido.origem_latitude,
+                        selectedPedido.origem_longitude
+                      ]}
+                      zoom={13}
+                      className="h-full w-full"
+                    >
+                      <FitBounds
+                        origem={[
+                          selectedPedido.origem_latitude,
+                          selectedPedido.origem_longitude
+                        ]}
+                        destino={[
+                          selectedPedido.destino_latitude,
+                          selectedPedido.destino_longitude
+                        ]}
+                      />
                     <FixMapSize />
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                    <Marker position={selectedPedido.origemCoords}><Popup>Origem</Popup></Marker>
-                    <Marker position={selectedPedido.destinoCoords}><Popup>Destino</Popup></Marker>
+                    <Marker
+                      position={[
+                        selectedPedido.origem_latitude,
+                        selectedPedido.origem_longitude
+                      ]}
+                    >
+                      <Tooltip permanent direction="top" offset={[0, -10]}>
+                        Origem
+                      </Tooltip>
+                    </Marker>
+                    <Marker
+                      position={[
+                        selectedPedido.destino_latitude,
+                        selectedPedido.destino_longitude
+                      ]}
+                    >
+                      <Tooltip permanent direction="top" offset={[0, -10]}>
+                        Destino
+                      </Tooltip>
+                    </Marker>
                     {selectedPedido.status === "em_rota" && (
                       <Marker position={getDriverPosition(selectedPedido)}>
                         <Popup>Motorista</Popup>
                       </Marker>
                     )}
-                    <Polyline positions={[selectedPedido.origemCoords, selectedPedido.destinoCoords]} color="#b91c1c" weight={4} dashArray="10, 10" opacity={0.5} />
-                  </MapContainer>
+                    <Polyline
+                      positions={[
+                        [
+                          selectedPedido.origem_latitude,
+                          selectedPedido.origem_longitude
+                        ],
+                        [
+                          selectedPedido.destino_latitude,
+                          selectedPedido.destino_longitude
+                        ]
+                      ]}
+                      color="red"
+                    />
+                    </MapContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-400">
+                      Sem coordenadas disponíveis
+                    </div>
+                  )}
                 </div>
 
                 {selectedPedido.status === "EM_ROTA" && (
@@ -426,14 +587,14 @@ export default function MeusPedidos() {
                     <i className="fas fa-circle-dot text-red-500 mt-1"></i>
                     <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase">Origem da Recolha</p>
-                      <p className="text-sm font-bold text-gray-700">{selectedPedido.origem}</p>
+                      <p className="text-sm font-bold text-gray-700">{selectedPedido.origem_endereco}</p>
                     </div>
                   </div>
                   <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 flex items-start gap-3">
                     <i className="fas fa-location-dot text-red-800 mt-1"></i>
                     <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase">Destino da Entrega</p>
-                      <p className="text-sm font-bold text-gray-700">{selectedPedido.destino}</p>
+                      <p className="text-sm font-bold text-gray-700">{selectedPedido.destino_endereco}</p>
                     </div>
                   </div>
                 </div>
@@ -444,17 +605,17 @@ export default function MeusPedidos() {
                     <div className="flex items-center gap-4">
                       <img src={selectedPedido.entregador.foto} className="w-16 h-16 rounded-2xl object-cover shadow-md border-2 border-white" />
                       <div>
-                        <h4 className="font-bold text-gray-800">{selectedPedido.entregador.nome}</h4>
+                        <h4 className="font-bold text-gray-800">{selectedPedido?.entregadorData?.nome}</h4>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Motorista Verificado</p>
-                        <p className="text-xs font-bold text-gray-600 mt-1">{selectedPedido.entregador.telefone}</p>
+                        <p className="text-xs font-bold text-gray-600 mt-1">{selectedPedido?.entregadorData?.telefone}</p>
                       </div>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
-                      <a href={`tel:${selectedPedido.entregador.telefone}`} className="flex-1 sm:flex-none h-12 px-5 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all active:scale-95 border border-gray-200">
+                      <a href={`tel:${selectedPedido?.entregadorData?.telefone}`} className="flex-1 sm:flex-none h-12 px-5 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all active:scale-95 border border-gray-200">
                         <i className="fas fa-phone"></i>
                         <span className="text-[10px] font-bold uppercase tracking-widest">Ligar</span>
                       </a>
-                      <a href={`https://wa.me/${selectedPedido.entregador.telefone}`} target="_blank" rel="noreferrer" className="flex-1 sm:flex-none h-12 px-5 flex items-center justify-center gap-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all active:scale-95 border border-green-100">
+                      <a href={`https://wa.me/${selectedPedido?.entregadorData?.telefone}`} target="_blank" rel="noreferrer" className="flex-1 sm:flex-none h-12 px-5 flex items-center justify-center gap-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all active:scale-95 border border-green-100">
                         <i className="fab fa-whatsapp text-lg"></i>
                         <span className="text-[10px] font-bold uppercase tracking-widest">Zap</span>
                       </a>
