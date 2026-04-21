@@ -15,21 +15,25 @@ export const getPedidos = async () => {
 };
 
 // LISTAR PEDIDOS DISPONÍVEIS (ENTREGADOR)
-export const getPedidosDisponiveis = async (entregadorId) => {
+export const getPedidosDisponiveis = async () => {
   const data = await getPedidos();
 
-  return data.filter((pedido) => {
-    const isDisponivel =
-    pedido.status === "AGUARDANDO_PROPOSTAS" &&
-    (!pedido.entregador || pedido.entregador === null);
+  return data.filter(
+    (p) =>
+      p.status === "AGUARDANDO_PROPOSTAS" &&
+      !p.entregador
+  );
+};
 
-    const isMeuPedidoEmAndamento =
-      String(pedido.entregador) === String(entregadorId) &&
-      pedido.status !== "ENTREGUE" &&
-      pedido.status !== "CANCELADO";
+export const getMeusPedidosAtivos = async (entregadorId) => {
+  const data = await getPedidos();
 
-    return isDisponivel || isMeuPedidoEmAndamento;
-  });
+  return data.filter(
+    (p) =>
+      String(p.entregador) === String(entregadorId) &&
+      p.status !== "ENTREGUE" &&
+      p.status !== "CANCELADO"
+  );
 };
 
 
