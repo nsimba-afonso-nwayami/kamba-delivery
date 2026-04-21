@@ -65,16 +65,13 @@ api.interceptors.response.use(
 
       // pede novo access token
       const res = await refreshApi.post("auth/token/refresh/", {
-        refresh_token: refresh, // ajuste no payload
+        refresh,
       });
 
       const newAccess = res.data.access;
 
       // atualiza storage
       localStorage.setItem("access_token", newAccess);
-
-      // atualiza headers da instância principal
-      api.defaults.headers.Authorization = `Bearer ${newAccess}`;
 
       // aplica novo token na request original
       originalRequest.headers.Authorization = `Bearer ${newAccess}`;
@@ -94,4 +91,3 @@ api.interceptors.response.use(
     }
   }
 );
-
