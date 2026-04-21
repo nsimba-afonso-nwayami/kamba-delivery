@@ -1,29 +1,171 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EntregadorLayout from "./components/EntregadorLayout";
 import ModalSmall from "./components/ModalSmall";
+import { getPedidos, getPedidosDisponiveis, aceitarPedido } from "../../services/pedidosService";
+import { getAvaliacoes } from "../../services/avaliacoesService";
+import { createNotificacao } from "../../services/notificacoesService";
+import { useAuth } from "../../contexts/AuthContext";
+import { formatPrice } from "../../utils/formatPrice";
+import toast from "react-hot-toast";
 
 export default function DashboardEntregador() {
   const [isSaldoOpen, setIsSaldoOpen] = useState(false);
   const [isDadosBancariosOpen, setIsDadosBancariosOpen] = useState(false);
+  const { user } = useAuth();
+  const [ganhosHoje, setGanhosHoje] = useState(0);
+  const [corridasHoje, setCorridasHoje] = useState(0);
+  const [avaliacao, setAvaliacao] = useState(0);
+  const [pedidos, setPedidos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const INITIAL_COUNT = 6;
+  const [showAll, setShowAll] = useState(false);
 
-  const pedidosDisponiveis = [
+  useEffect(() => {
+    const loadStats = async () => {
+      if (!user?.id) return;
+
+      try {
+        const pedidos = await getPedidos();
+        const avaliacoes = await getAvaliacoes();
+
+        // FILTRAR pedidos do entregador logado
+        const meusPedidos = pedidos.filter(
+          (p) => String(p.entregador) === String(user.id)
+        );
+
+        // CORRIDAS HOJE
+        const hoje = new Date().toISOString().split("T")[0];
+
+        const corridasHoje = meusPedidos.filter((p) => {
+          const dataPedido = p.created_at?.split("T")[0];
+          return dataPedido === hoje && p.status === "ENTREGUE";
+        });
+
+        setCorridasHoje(corridasHoje.length);
+
+        // GANHOS HOJE
+        const ganhos = corridasHoje.reduce((acc, p) => {
+          return acc + Number(p.valor_final || p.valor_sugerido || 0);
+        }, 0);
+
+        setGanhosHoje(ganhos);
+
+        // AVALIAÇÃO MÉDIA 
+        const minhasAvaliacoes = avaliacoes.filter(
+          (a) => String(a.entregador) === String(user.id)
+        );
+
+        const media =
+          minhasAvaliacoes.length > 0
+            ? minhasAvaliacoes.reduce((acc, a) => acc + a.nota, 0) /
+              minhasAvaliacoes.length
+            : 0;
+
+        setAvaliacao(media.toFixed(1));
+
+      } catch (err) {
+        console.log("Erro stats dashboard:", err);
+      }
+    };
+
+    loadStats();
+  }, [user?.id]);
+
+  const statsCards = [
     {
-      id: "KD-2001",
-      cliente: "Mauro Silva",
-      distancia: "2.4 km",
-      valor: "1.500 Kz",
-      origem: "Patriota, Bomba da Sonangol",
-      destino: "Talatona, Belas Business Park"
+      label: "Ganhos de Hoje",
+      value: formatPrice(ganhosHoje),
+      extra: null,
+      align: "left",
     },
     {
-      id: "KD-2005",
-      cliente: "Ana Paula",
-      distancia: "5.1 km",
-      valor: "3.200 Kz",
-      origem: "Maianga, Largo do Sagrada",
-      destino: "Viana, Ponte amarela"
-    }
+      label: "Corridas",
+      value: corridasHoje,
+      extra: "Finalizadas",
+      align: "split",
+    },
+    {
+      label: "Avaliação",
+      value: avaliacao || 0,
+      extra: null,
+      align: "split",
+      stars: true,
+    },
   ];
+
+  useEffect(() => {
+    const loadPedidos = async () => {
+      if (!user?.id) return;
+
+      try {
+        setLoading(true);
+
+        const data = await getPedidosDisponiveis(user.id);
+
+        console.log("RAW API RESPONSE:", data);
+
+        // FILTRO CORRETO
+        const filtrados = data.filter(
+          (p) =>
+            p.status === "AGUARDANDO_PROPOSTAS" &&
+            !p.entregador
+        );
+
+        const ordenados = [...data].sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+
+        setPedidos(ordenados);
+      } catch (err) {
+        console.log("Erro ao carregar pedidos:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPedidos();
+  }, [user?.id]);
+
+  const pedidosExibidos = showAll
+  ? pedidos
+  : pedidos.slice(0, INITIAL_COUNT);
+
+  const handleAceitarPedido = async (pedidoId) => {
+    try {
+      const pedidoSelecionado = pedidos.find((p) => p.id === pedidoId);
+
+      if (!pedidoSelecionado) {
+        toast.error("Pedido não encontrado.");
+        return;
+      }
+
+      // chama backend primeiro (fonte da verdade)
+      const response = await aceitarPedido(pedidoId);
+
+      // remove da UI só se backend confirmar
+      const updated = await getPedidosDisponiveis(user.id);
+      setPedidos(updated);
+
+      toast.success("Pedido aceite com sucesso!");
+
+      // NOTIFICAÇÃO (corrigida defensivamente)
+      if (pedidoSelecionado?.solicitante) {
+        await createNotificacao({
+          titulo: "Pedido aceite",
+          mensagem: `O seu pedido foi aceite por ${user?.nome || "um entregador"}.`,
+          usuario: pedidoSelecionado.solicitante,
+        });
+      }
+
+    } catch (err) {
+      console.log("Erro ao aceitar pedido:", err?.response?.data || err);
+
+      toast.error(
+        err?.response?.data?.erro ||
+        "Erro ao aceitar pedido"
+      );
+    }
+  };
 
   return (
     <>
@@ -61,79 +203,120 @@ export default function DashboardEntregador() {
 
           {/* SEÇÃO DE ESTATÍSTICAS */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-            <div className="bg-white p-6 rounded-2xl border border-rose-200 shadow-sm">
-              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1 text-left">Ganhos de Hoje</p>
-              <p className="text-2xl font-black text-red-900 tracking-tight text-left">12.450 <span className="text-sm font-bold text-red-700">Kz</span></p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-2xl border border-rose-200 shadow-sm flex justify-between items-end">
-              <div className="text-left">
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Corridas</p>
-                <p className="text-2xl font-black text-red-900">14</p>
-              </div>
-              <div className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-xl uppercase">Finalizadas</div>
-            </div>
+            {statsCards.map((card, index) => (
+              <div
+                key={index}
+                className="bg-white p-6 rounded-2xl border border-rose-200 shadow-sm flex justify-between items-end"
+              >
+                <div className="text-left">
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                    {card.label}
+                  </p>
 
-            <div className="bg-white p-6 rounded-2xl border border-rose-200 shadow-sm flex justify-between items-end">
-              <div className="text-left">
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Avaliação</p>
-                <p className="text-2xl font-black text-red-900">4.9</p>
+                  <p className="text-2xl font-black text-red-900">
+                    {card.value}
+                  </p>
+                </div>
+
+                {/* EXTRA (Finalizadas / estrelas etc) */}
+                {card.extra && (
+                  <div className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-xl uppercase">
+                    {card.extra}
+                  </div>
+                )}
+
+                {/* ESTRELAS (só para avaliação) */}
+                {card.stars && (
+                  <div className="flex gap-0.5 text-rose-500 text-[10px] mb-2">
+                    {[...Array(5)].map((_, i) => (
+                      <i key={i} className="fas fa-star"></i>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="flex gap-0.5 text-rose-500 text-[10px] mb-2">
-                {[...Array(5)].map((_, i) => <i key={i} className="fas fa-star"></i>)}
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* LISTAGEM DE PEDIDOS */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4 px-2">
-              <h2 className="text-lg font-bold text-red-900 tracking-tight flex items-center gap-2">
-                <span className="w-1.5 h-5 bg-red-700 rounded-full"></span>
-                Pedidos em Aberto
-              </h2>
-              <span className="text-[9px] font-black text-red-700 bg-rose-200 px-3 py-1 rounded-full uppercase tracking-tighter animate-pulse">Radar Ativo</span>
-            </div>
-
-            {pedidosDisponiveis.map((pedido) => (
-              <div key={pedido.id} className="bg-white border border-rose-200/60 rounded-2xl p-6 shadow-sm">
-                <div className="flex justify-between items-start gap-4 mb-6 flex-wrap">
-                  <div className="min-w-0">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{pedido.id} • {pedido.distancia}</span>
-                    <h3 className="font-black text-red-900 text-2xl tracking-tight">{pedido.valor}</h3>
-                  </div>
-                  <button className="bg-red-700 text-white px-8 py-3.5 rounded-xl font-bold text-[10px] uppercase tracking-[0.15em] shadow-lg shadow-red-200 hover:bg-red-600 active:scale-95 transition-all cursor-pointer ml-auto">
-                    Aceitar
-                  </button>
+            {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                  <i className="fas fa-spinner animate-spin text-red-700 text-3xl mb-4"></i>
+                  <p className="text-red-600 text-sm font-semibold">
+                    Carregando pedidos...
+                  </p>
+                </div>
+              ) : pedidosExibidos.length > 0 ? (
+                <>
+                <div className="flex items-center justify-between mb-4 px-2">
+                  <h2 className="text-lg font-bold text-red-900 tracking-tight flex items-center gap-2">
+                    <span className="w-1.5 h-5 bg-red-700 rounded-full"></span>
+                    Pedidos em Aberto
+                  </h2>
+                  <span className="text-[9px] font-black text-red-700 bg-rose-200 px-3 py-1 rounded-full uppercase tracking-tighter animate-pulse">Radar Ativo</span>
                 </div>
 
-                {/* Linha do tempo recuperada e fluida */}
-                <div className="space-y-5 relative">
-                  <div className="absolute left-2.25 top-3 bottom-3 w-0.5 bg-rose-200/50"></div>
-                  
-                  <div className="flex items-start gap-4 relative z-10">
-                    <div className="w-5 h-5 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center shrink-0">
-                      <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
+                {pedidosExibidos.map((pedido) => (
+                  <div key={pedido.id} className="bg-white border border-rose-200/60 rounded-2xl p-6 shadow-sm">
+                    <div className="flex justify-between items-start gap-4 mb-6 flex-wrap">
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{pedido.titulo} • {pedido.peso_kg}kg</span>
+                        <h3 className="font-black text-red-900 text-2xl tracking-tight">{formatPrice(pedido.valor_sugerido)}</h3>
+                      </div>
+                      <button
+                        onClick={() => handleAceitarPedido(pedido.id)}
+                        className="bg-red-700 text-white px-8 py-3.5 rounded-xl font-bold text-[10px] uppercase tracking-[0.15em] shadow-lg shadow-red-200 hover:bg-red-600 active:scale-95 transition-all cursor-pointer ml-auto">
+                        Aceitar
+                      </button>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5 tracking-wider">Recolha</p>
-                      <p className="text-sm font-bold text-gray-700 truncate">{pedido.origem}</p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-start gap-4 relative z-10">
-                    <div className="w-5 h-5 bg-white border-2 border-red-700 rounded-full flex items-center justify-center shrink-0">
-                      <div className="w-1.5 h-1.5 bg-red-700 rounded-full"></div>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5 tracking-wider">Entrega</p>
-                      <p className="text-sm font-bold text-gray-700 truncate">{pedido.destino}</p>
+                    {/* Linha do tempo recuperada e fluida */}
+                    <div className="space-y-5 relative">
+                      <div className="absolute left-2.25 top-3 bottom-3 w-0.5 bg-rose-200/50"></div>
+                      
+                      <div className="flex items-start gap-4 relative z-10">
+                        <div className="w-5 h-5 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center shrink-0">
+                          <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5 tracking-wider">Recolha</p>
+                          <p className="text-sm font-bold text-gray-700 truncate">{pedido.origem_endereco}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-4 relative z-10">
+                        <div className="w-5 h-5 bg-white border-2 border-red-700 rounded-full flex items-center justify-center shrink-0">
+                          <div className="w-1.5 h-1.5 bg-red-700 rounded-full"></div>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5 tracking-wider">Entrega</p>
+                          <p className="text-sm font-bold text-gray-700 truncate">{pedido.destino_endereco}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
+              </>
+            ) : (
+              <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-100">
+                <i className="fas fa-box-open text-4xl text-gray-200 mb-4"></i>
+                <p className="text-gray-400 font-bold">
+                  Nenhum pedido disponível no momento.
+                </p>
               </div>
-            ))}
+            )}
           </div>
+
+          {pedidos.length > INITIAL_COUNT && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={() => setShowAll((prev) => !prev)}
+                className="px-6 py-3 cursor-pointer bg-gray-900 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-all uppercase tracking-widest shadow-lg"
+              >
+                {showAll ? "Ver menos" : "Ver mais"}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* MODAIS */}
