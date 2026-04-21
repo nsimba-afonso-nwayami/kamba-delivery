@@ -14,6 +14,39 @@ export const getPedidos = async () => {
   return response.data;
 };
 
+// LISTAR PEDIDOS DISPONÍVEIS (ENTREGADOR)
+export const getPedidosDisponiveis = async (entregadorId) => {
+  const data = await getPedidos();
+
+  return data.filter((pedido) => {
+    const isDisponivel =
+      pedido.status === "AGUARDANDO_PROPOSTAS" &&
+      pedido.entregador === null;
+
+    const isMeuPedidoEmAndamento =
+      String(pedido.entregador) === String(entregadorId) &&
+      pedido.status !== "ENTREGUE" &&
+      pedido.status !== "CANCELADO";
+
+    return isDisponivel || isMeuPedidoEmAndamento;
+  });
+};
+
+
+// HISTÓRICO DO ENTREGADOR
+export const getHistoricoEntregador = async (entregadorId) => {
+  const data = await getPedidos();
+
+  return data
+    .filter(
+      (pedido) =>
+        String(pedido.entregador) === String(entregadorId) &&
+        (pedido.status === "ENTREGUE" ||
+         pedido.status === "CANCELADO")
+    )
+    .sort((a, b) => b.id - a.id);
+};
+
 // DETALHE DO PEDIDO
 export const getPedido = async (id) => {
   const response = await api.get(`pedidos/${id}/`);
