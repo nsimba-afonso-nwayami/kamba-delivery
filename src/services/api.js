@@ -2,7 +2,21 @@ import axios from "axios";
 
 const API_URL = "https://traga-rapido.fimbatec.com/api/";
 
-// instância principal da API
+// Variáveis para controle de fluxo de refresh
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -10,84 +24,76 @@ export const api = axios.create({
   },
 });
 
-// instância separada para refresh (evita loop infinito)
-const refreshApi = axios.create({
-  baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-/* ================================
-   REQUEST INTERCEPTOR
-   -> adiciona token automaticamente
-================================ */
+// Interceptor de Requisição
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("access_token");
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-/* ================================
-   RESPONSE INTERCEPTOR
-   -> trata 401 + refresh token
-================================ */
+// Interceptor de Resposta
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // se não tiver resposta ou não for 401
-    if (!error.response || error.response.status !== 401) {
+    // Se não for erro 401 ou for uma tentativa de retry no endpoint de login/refresh, rejeita
+    if (error.response?.status !== 401 || originalRequest._retry) {
       return Promise.reject(error);
     }
 
-    // evita loop infinito
-    if (originalRequest._retry) {
-      return Promise.reject(error);
+    if (isRefreshing) {
+      // Se já estiver renovando o token, coloca a requisição atual em uma fila de espera
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      })
+        .then((token) => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        })
+        .catch((err) => Promise.reject(err));
     }
 
     originalRequest._retry = true;
+    isRefreshing = true;
 
     try {
-      const refresh = localStorage.getItem("refresh_token");
+      const refreshToken = localStorage.getItem("refresh_token");
 
-      if (!refresh) {
-        throw new Error("Sem refresh token");
-      }
+      if (!refreshToken) throw new Error("No refresh token available");
 
-      // pede novo access token
-      const res = await refreshApi.post("auth/token/refresh/", {
-        refresh,
+      // Usamos o axios puro aqui para evitar interceptores globais nesta chamada específica
+      const response = await axios.post(`${API_URL}auth/token/refresh/`, {
+        refresh: refreshToken,
       });
 
-      const newAccess = res.data.access;
+      const { access } = response.data;
+      localStorage.setItem("access_token", access);
 
-      // atualiza storage
-      localStorage.setItem("access_token", newAccess);
+      api.defaults.headers.common["Authorization"] = `Bearer ${access}`;
+      originalRequest.headers.Authorization = `Bearer ${access}`;
 
-      // aplica novo token na request original
-      originalRequest.headers.Authorization = `Bearer ${newAccess}`;
-
-      // refaz request original
+      processQueue(null, access);
       return api(originalRequest);
-    } catch (err) {
-      // se refresh falhar → logout total
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("user_id");
-      localStorage.removeItem("tipo");
-
-      window.location.href = "/login";
-
-      return Promise.reject(err);
+    } catch (refreshError) {
+      processQueue(refreshError, null);
+      handleLogout();
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
     }
   }
 );
+
+// Centraliza a lógica de limpeza
+const handleLogout = () => {
+  localStorage.clear(); // Limpa tudo de uma vez para evitar resíduos
+  if (window.location.pathname !== "/login") {
+    window.location.href = "/login";
+  }
+};

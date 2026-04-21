@@ -20,8 +20,8 @@ export const getPedidosDisponiveis = async (entregadorId) => {
 
   return data.filter((pedido) => {
     const isDisponivel =
-      pedido.status === "AGUARDANDO_PROPOSTAS" &&
-      pedido.entregador === null;
+    pedido.status === "AGUARDANDO_PROPOSTAS" &&
+    (!pedido.entregador || pedido.entregador === null);
 
     const isMeuPedidoEmAndamento =
       String(pedido.entregador) === String(entregadorId) &&
