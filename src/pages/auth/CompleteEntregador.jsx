@@ -46,6 +46,7 @@ export default function CompleteEntregador() {
   };
 
   const onSubmit = async (data) => {
+    const toastId = toast.loading("Processando a finalização de cadastro...");
     try {
       const userId = localStorage.getItem("user_id");
 

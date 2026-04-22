@@ -20,6 +20,7 @@ export default function Register() {
   });
 
   const onSubmit = async (data) => {
+    const toastId = toast.loading("Processando cadastro...");
     try {
       const payload = {
         nome: data.nome,

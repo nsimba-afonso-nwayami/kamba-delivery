@@ -21,6 +21,7 @@ export default function Login() {
   });
 
   const onSubmit = async (data) => {
+    const toastId = toast.loading("Processando login...");
     try {
       const response = await loginUser(data);
 
