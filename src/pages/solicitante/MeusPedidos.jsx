@@ -524,7 +524,7 @@ export default function MeusPedidos() {
                       ]}
                     >
                       <Tooltip permanent direction="top" offset={[0, -10]}>
-                        Origem
+                        Origem: {selectedPedido.origem_endereco}
                       </Tooltip>
                     </Marker>
                     <Marker
@@ -534,7 +534,7 @@ export default function MeusPedidos() {
                       ]}
                     >
                       <Tooltip permanent direction="top" offset={[0, -10]}>
-                        Destino
+                        Destino: {selectedPedido.endereco_endereco}
                       </Tooltip>
                     </Marker>
                     {selectedPedido.status === "em_rota" && (
