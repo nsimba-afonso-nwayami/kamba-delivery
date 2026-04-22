@@ -153,7 +153,7 @@ export default function DashboardEntregador() {
       if (pedidoSelecionado?.solicitante) {
         await createNotificacao({
           titulo: "Pedido aceite",
-          mensagem: `O seu pedido "${pedidoSelecionado?.titulo}" foi aceite por ${user?.nome || "um entregador"}.`,
+          mensagem: `O pedido "${pedidoSelecionado?.titulo}" (${formatPrice(pedidoSelecionado?.valor_sugerido)}) foi aceite por ${user?.nome}.`,
           usuario: pedidoSelecionado.solicitante,
         });
       }
