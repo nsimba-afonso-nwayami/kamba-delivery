@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import EntregadorLayout from "./components/EntregadorLayout";
 import ModalSmall from "./components/ModalSmall";
-import { getPedidos, getPedidosDisponiveis, aceitarPedido } from "../../services/pedidosService";
+import { getPedidosPublicos, getMeusPedidosAtivos, aceitarPedido } from "../../services/pedidosService";
 import { getAvaliacoes } from "../../services/avaliacoesService";
 import { createNotificacao } from "../../services/notificacoesService";
 import { useAuth } from "../../contexts/AuthContext";
@@ -19,6 +20,7 @@ export default function DashboardEntregador() {
   const [loading, setLoading] = useState(true);
   const INITIAL_COUNT = 6;
   const [showAll, setShowAll] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadStats = async () => {
@@ -100,22 +102,14 @@ export default function DashboardEntregador() {
       try {
         setLoading(true);
 
-        const data = await getPedidosDisponiveis(user.id);
+        const publicos = await getPedidosPublicos();
 
-        console.log("RAW API RESPONSE:", data);
-
-        // FILTRO CORRETO
-        const filtrados = data.filter(
-          (p) =>
-            p.status === "AGUARDANDO_PROPOSTAS" &&
-            !p.entregador
-        );
-
-        const ordenados = [...data].sort(
-          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        const ordenados = publicos.sort(
+          (a, b) => new Date(b.criado_em) - new Date(a.criado_em)
         );
 
         setPedidos(ordenados);
+
       } catch (err) {
         console.log("Erro ao carregar pedidos:", err);
       } finally {
@@ -143,16 +137,23 @@ export default function DashboardEntregador() {
       const response = await aceitarPedido(pedidoId);
 
       // remove da UI só se backend confirmar
-      const updated = await getPedidosDisponiveis(user.id);
-      setPedidos(updated);
+      const updated = await getPedidosPublicos();
+
+      const ordenados = updated.sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+
+      setPedidos(ordenados);
 
       toast.success("Pedido aceite com sucesso!");
+      
+      navigate("/dashboard/entregador/entregas");
 
       // NOTIFICAÇÃO (corrigida defensivamente)
       if (pedidoSelecionado?.solicitante) {
         await createNotificacao({
           titulo: "Pedido aceite",
-          mensagem: `O seu pedido foi aceite por ${user?.nome || "um entregador"}.`,
+          mensagem: `O seu pedido "${pedidoSelecionado?.titulo}" foi aceite por ${user?.nome || "um entregador"}.`,
           usuario: pedidoSelecionado.solicitante,
         });
       }
