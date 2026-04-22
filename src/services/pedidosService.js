@@ -14,25 +14,25 @@ export const getPedidos = async () => {
   return response.data;
 };
 
-// LISTAR PEDIDOS DISPONÍVEIS (ENTREGADOR)
-export const getPedidosDisponiveis = async () => {
+// PEDIDOS PÚBLICOS (radar)
+export const getPedidosPublicos = async () => {
   const data = await getPedidos();
 
   return data.filter(
-    (p) =>
-      p.status === "AGUARDANDO_PROPOSTAS" &&
-      !p.entregador
+    (pedido) =>
+      pedido.status === "AGUARDANDO_PROPOSTAS" &&
+      (!pedido.entregador || pedido.entregador === null)
   );
 };
 
+// MEUS PEDIDOS ATIVOS
 export const getMeusPedidosAtivos = async (entregadorId) => {
   const data = await getPedidos();
 
   return data.filter(
-    (p) =>
-      String(p.entregador) === String(entregadorId) &&
-      p.status !== "ENTREGUE" &&
-      p.status !== "CANCELADO"
+    (pedido) =>
+      String(pedido.entregador) === String(entregadorId) &&
+      !["ENTREGUE", "CANCELADO"].includes(pedido.status)
   );
 };
 
