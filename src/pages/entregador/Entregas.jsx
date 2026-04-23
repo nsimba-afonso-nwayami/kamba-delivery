@@ -1,97 +1,403 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import EntregadorLayout from "./components/EntregadorLayout";
 import Modal from "./components/Modal";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { getMeusPedidosAtivos } from "../../services/pedidosService";
+import { getMeusPedidosAtivos, aceitarPedido, pedidoACaminho, itemRetirado, pedidoEmEntrega, pedidoEntregue } from "../../services/pedidosService";
 import { getUsuarioById } from "../../services/usuariosService";
+import { enviarPosicao } from "../../services/rastreamentoService";
 import { useAuth } from "../../contexts/AuthContext";
 import { formatPrice } from "../../utils/formatPrice";
+import { toast } from "react-hot-toast";
 
 export default function EntregasEntregador() {
-    const [openChat, setOpenChat] = useState(false);
-    const [newMessage, setNewMessage] = useState("");
-    const [mapType, setMapType] = useState("map"); // "map" | "satellite"
-    const { user } = useAuth();
-    const [entrega, setEntrega] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const [openChat, setOpenChat] = useState(false);
+  const [newMessage, setNewMessage] = useState("");
+  const [mapType, setMapType] = useState("map"); // "map" | "satellite"
+  const { user } = useAuth();
+  const [entrega, setEntrega] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [minhaPosicao, setMinhaPosicao] = useState(null);
+  const ultimaPosicaoEnviadaRef = useRef(null);
+  const [rota, setRota] = useState([]);
+  const ultimaPosicaoRef = useRef(null);
+  const avisouRef = useRef(false);
+  const lastRouteTimeRef = useRef(0);
 
   // Dados da API
+  const fetchEntrega = async () => {
+    if (!user?.id) return;
+
+    const ativos = await getMeusPedidosAtivos(user.id);
+
+    if (ativos.length === 0) {
+      setEntrega(null);
+      return;
+    }
+
+    let pedido = ativos[0];
+
+    if (pedido.solicitante) {
+      const usuario = await getUsuarioById(pedido.solicitante);
+
+      pedido = {
+        ...pedido,
+        solicitanteData: usuario,
+      };
+    }
+
+    setEntrega(pedido);
+
+    // CALCULAR ROTA
+    const origem = [
+      pedido.origem_latitude,
+      pedido.origem_longitude,
+    ];
+
+    const destino = [
+      pedido.destino_latitude,
+      pedido.destino_longitude,
+    ];
+
+    const info = await calcularRotaOSRM(origem, destino);
+  };
+
   useEffect(() => {
-    const loadEntrega = async () => {
-      if (!user?.id) return;
-
-      try {
-        setLoading(true);
-
-        const ativos = await getMeusPedidosAtivos(user.id);
-         console.log("PEDIDOS ATIVOS:", ativos);
-
-        // GARANTE APENAS UMA
-        if (ativos.length > 0) {
-          let pedido = ativos[0];
-
-          // buscar dados do solicitante
-          if (pedido.solicitante && typeof pedido.solicitante === "number") {
-            try {
-              const usuario = await getUsuarioById(pedido.solicitante);
-              console.log("SOLICITANTE DATA:", usuario);
-
-              pedido = {
-                ...pedido,
-                solicitanteData: usuario,
-              };
-            } catch (err) {
-              console.log("Erro ao buscar solicitante:", err);
-            }
-          }
-
-          setEntrega(pedido);
-        } else {
-          setEntrega(null);
-        }
-
-      } catch (err) {
-        console.log("Erro ao carregar entrega:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadEntrega();
+    fetchEntrega();
   }, [user?.id]);
 
   useEffect(() => {
-    const interval = setInterval(async () => {
-      if (user?.id) {
-        const ativos = await getMeusPedidosAtivos(user.id);
-
-        if (ativos.length > 0) {
-          let pedido = ativos[0];
-
-          // repetir lógica do solicitante
-          if (pedido.solicitante && typeof pedido.solicitante === "number") {
-            try {
-              const usuario = await getUsuarioById(pedido.solicitante);
-
-              pedido = {
-                ...pedido,
-                solicitanteData: usuario,
-              };
-            } catch (err) {
-              console.log("Erro ao buscar solicitante:", err);
-            }
-          }
-
-          setEntrega(pedido);
-        } else {
-          setEntrega(null);
-        }
-      }
-    }, 5000);
-
+    const interval = setInterval(fetchEntrega, 5000);
     return () => clearInterval(interval);
   }, [user?.id]);
+
+  const valorFinal = entrega?.valor_final;
+
+  const calcularRotaOSRM = async (origem, destino) => {
+    if (!origem || !destino) return null;
+
+    try {
+      const res = await fetch(
+        `https://router.project-osrm.org/route/v1/driving/` +
+        `${origem[1]},${origem[0]};${destino[1]},${destino[0]}?overview=full&geometries=geojson`
+      );
+
+      const data = await res.json();
+
+      if (!data.routes || data.routes.length === 0) return null;
+
+      const route = data.routes[0];
+
+      return {
+        distanciaKm: route.distance / 1000,
+        tempoMin: Math.round(route.duration / 60),
+      };
+
+    } catch (err) {
+      console.log("Erro OSRM:", err);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const loadRoute = async () => {
+      if (!entrega) return;
+
+      const origem = [
+        entrega.origem_latitude,
+        entrega.origem_longitude,
+      ];
+
+      const destino = [
+        entrega.destino_latitude,
+        entrega.destino_longitude,
+      ];
+
+      const info = await calcularRotaOSRM(origem, destino);
+      setRouteInfo(info);
+    };
+
+    loadRoute();
+  }, [entrega]);
+
+  const distanciaKm = routeInfo?.distanciaKm || 0;
+  const tempoMin = routeInfo?.tempoMin || 0;
+
+  const formatTempo = (min) => {
+    if (!min) return "--";
+
+    if (min < 60) return `${Math.round(min)} min`;
+
+    const h = Math.floor(min / 60);
+    const m = Math.round(min % 60);
+
+    return `${h}h ${m}min`;
+  };
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      console.log("GPS não suportado");
+      return;
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        const novaPos = [lat, lng];
+        animarMovimento(novaPos);
+
+        // só envia se tiver entrega ativa
+        if (entrega?.id) {
+          const ultima = ultimaPosicaoEnviadaRef.current;
+
+          const distancia = ultima
+            ? calcularDistanciaMetros(novaPos, ultima)
+            : 999;
+
+          // só envia se mover > 15 metros
+          if (!ultima || distancia > 15) {
+            await enviarPosicao(entrega.id, lat, lng);
+            ultimaPosicaoEnviadaRef.current = novaPos;
+          }
+        }
+      },
+      (err) => console.log("Erro GPS:", err),
+      {
+        enableHighAccuracy: true,
+        maximumAge: 1000,
+        timeout: 10000,
+      }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [entrega]);
+
+  const calcularDistanciaMetros = (pos1, pos2) => {
+    if (!pos1 || !pos2) return 0;
+
+    const R = 6371e3;
+
+    const dLat = ((pos2[0] - pos1[0]) * Math.PI) / 180;
+    const dLon = ((pos2[1] - pos1[1]) * Math.PI) / 180;
+
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((pos1[0] * Math.PI) / 180) *
+        Math.cos((pos2[0] * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
+
+  const calcularRotaDinamica = async (origem, destino) => {
+    if (!origem || !destino) return;
+
+    try {
+      const res = await fetch(
+        `https://router.project-osrm.org/route/v1/driving/` +
+        `${origem[1]},${origem[0]};${destino[1]},${destino[0]}?overview=full&geometries=geojson&alternatives=false&steps=false`
+      );
+
+      const data = await res.json();
+
+      if (!data.routes || data.routes.length === 0) return;
+
+      const coords = data.routes[0].geometry.coordinates;
+
+      // inverter [lng, lat] → [lat, lng]
+      const rotaFormatada = coords.map((p) => [p[1], p[0]]);
+
+      setRota(rotaFormatada);
+
+    } catch (err) {
+      console.log("Erro rota dinâmica:", err);
+    }
+  };
+
+  const animarMovimento = (novaPos) => {
+    if (!ultimaPosicaoRef.current) {
+      setMinhaPosicao(novaPos);
+      ultimaPosicaoRef.current = novaPos;
+      return;
+    }
+
+    const passos = 10;
+    const [lat1, lng1] = ultimaPosicaoRef.current;
+    const [lat2, lng2] = novaPos;
+
+    let i = 0;
+
+    const interval = setInterval(() => {
+      i++;
+
+      const lat = lat1 + ((lat2 - lat1) * i) / passos;
+      const lng = lng1 + ((lng2 - lng1) * i) / passos;
+
+      setMinhaPosicao([lat, lng]);
+
+      if (i >= passos) {
+        clearInterval(interval);
+        ultimaPosicaoRef.current = novaPos;
+      }
+    }, 50);
+  };
+
+  const getPontoDestino = () => {
+    if (!entrega) return null;
+
+    // depois de pegar o item → vai ao destino
+    if (
+      entrega.status === "ITEM_RETIRADO" ||
+      entrega.status === "EM_ENTREGA"
+    ) {
+      return [entrega.destino_latitude, entrega.destino_longitude];
+    }
+
+    // antes disso → vai à origem
+    return [entrega.origem_latitude, entrega.origem_longitude];
+  };
+
+  useEffect(() => {
+    if (!minhaPosicao || !entrega) return;
+
+    const destino = getPontoDestino();;
+    if (!destino) return;
+
+    const distanciaDesvio = calcularDistanciaMetros(
+      minhaPosicao,
+      ultimaPosicaoRef.current
+    );
+
+    if (
+      (!ultimaPosicaoRef.current || distanciaDesvio > 40) &&
+      Date.now() - lastRouteTimeRef.current > 3000
+    ) {
+      calcularRotaDinamica(minhaPosicao, destino);
+      ultimaPosicaoRef.current = minhaPosicao;
+      lastRouteTimeRef.current = Date.now();
+    }
+
+  }, [minhaPosicao, entrega?.status]);
+  
+
+  useEffect(() => {
+    if (!minhaPosicao || !entrega) return;
+
+    const destino = getPontoDestino();
+    if (!destino) return;
+
+    const dist = calcularDistanciaMetros(minhaPosicao, destino);
+
+    if (dist < 100 && !avisouRef.current) {
+      toast("Estás próximo do destino 📍");
+      avisouRef.current = true;
+    }
+  }, [minhaPosicao]);
+
+  useEffect(() => {
+    if (!entrega || !minhaPosicao) return;
+
+    const destino = getPontoDestino();
+    if (!destino) return;
+
+    if (rota.length === 0) {
+      calcularRotaDinamica(minhaPosicao, destino);
+    }
+  }, [entrega, minhaPosicao]);
+
+  const encontrarIndiceMaisProximo = (pos, rota) => {
+    if (!pos || !rota || rota.length === 0) return 0;
+
+    let minDist = Infinity;
+    let indice = 0;
+
+    rota.forEach((ponto, i) => {
+      const d = calcularDistanciaMetros(pos, ponto);
+      if (d < minDist) {
+        minDist = d;
+        indice = i;
+      }
+    });
+
+    return indice;
+  };
+
+  const indiceAtual = encontrarIndiceMaisProximo(minhaPosicao, rota);
+
+  const rotaPercorrida = rota.slice(0, indiceAtual + 1);
+  const rotaRestante = rota.slice(indiceAtual);
+
+  function FitBoundsEntregador({ pontos }) {
+    const map = useMap();
+
+    useEffect(() => {
+      if (!pontos || pontos.length === 0) return;
+
+      setTimeout(() => {
+        map.fitBounds(pontos, {
+          padding: [60, 60],
+          maxZoom: 16,
+        });
+      }, 200);
+    }, [pontos, map]);
+
+    return null;
+  }
+
+  const STATUS_FLOW = {
+    PROPOSTA_ACEITA: {
+      label: "Iniciar deslocamento",
+      action: pedidoACaminho,
+    },
+    ENTREGADOR_A_CAMINHO: {
+      label: "Item retirado",
+      action: itemRetirado,
+    },
+    ITEM_RETIRADO: {
+      label: "Iniciar entrega",
+      action: pedidoEmEntrega,
+    },
+    EM_ENTREGA: {
+      label: "Confirmar entrega",
+      action: pedidoEntregue,
+    },
+  };
+
+  const STATUS_STYLE = {
+    PROPOSTA_ACEITA: "bg-yellow-500",
+    ENTREGADOR_A_CAMINHO: "bg-blue-600",
+    ITEM_RETIRADO: "bg-purple-600",
+    EM_ENTREGA: "bg-green-600",
+  };
+
+  const STATUS_MESSAGES = {
+    PROPOSTA_ACEITA: "A caminho do local ",
+    ENTREGADOR_A_CAMINHO: "Item recolhido ",
+    ITEM_RETIRADO: "Entrega iniciada ",
+    EM_ENTREGA: "Entrega concluída ",
+  };
+
+  const handleAtualizarStatus = async () => {
+    if (!entrega) return;
+
+    const config = STATUS_FLOW[entrega.status];
+    if (!config) return;
+
+    try {
+      await config.action(entrega.id);
+
+      toast.success(STATUS_MESSAGES[entrega.status] || "Status atualizado");
+
+      fetchEntrega();
+    } catch (err) {
+      toast.error("Erro ao atualizar status");
+    }
+  };
 
   const mensagensChat = [
     { id: 1, texto: "Olá, já estou a caminho.", enviadoPor: "eu", hora: "14:20" },
@@ -134,7 +440,7 @@ export default function EntregasEntregador() {
 
               <div className="text-right">
                 <p className="text-xs text-gray-400">Valor</p>
-                <p className="font-bold text-red-700 text-lg">
+                <p className="font-bold text-gray-800 text-lg">
                   {formatPrice(entrega.valor_sugerido)}
                 </p>
               </div>
@@ -159,7 +465,11 @@ export default function EntregasEntregador() {
               <div>
                 <p className="text-gray-400 text-xs">Distância</p>
                 <p className="font-semibold text-gray-800">
-                  {entrega.valor_sugerido}
+                  {distanciaKm.toFixed(1)} km
+                </p>
+
+                <p className="text-xs text-gray-500 mt-1">
+                  ~ {formatTempo(tempoMin)}
                 </p>
               </div>
 
@@ -208,8 +518,16 @@ export default function EntregasEntregador() {
                   }
                 />
 
+                <FitBoundsEntregador
+                  pontos={[
+                    [entrega.origem_latitude, entrega.origem_longitude],
+                    [entrega.destino_latitude, entrega.destino_longitude],
+                    minhaPosicao
+                  ].filter(Boolean)}
+                />
+
                 {/* ORIGEM */}
-                <Marker position={[entrega.origem_latitude, entrega.origem_longitude]}>
+                <Marker key="origem" position={[entrega.origem_latitude, entrega.origem_longitude]}>
                   <Tooltip permanent direction="top" offset={[0, -10]}>
                     Origem: {entrega.origem_endereco}
                   </Tooltip>
@@ -222,14 +540,28 @@ export default function EntregasEntregador() {
                   </Tooltip>
                 </Marker>
 
+                {minhaPosicao && (
+                  <Marker position={minhaPosicao}>
+                    <Tooltip permanent direction="top" offset={[0, -10]}>Você</Tooltip>
+                  </Marker>
+                )}
+
                 {/* LINHA */}
-                <Polyline
-                  positions={[
-                    [entrega.origem_latitude, entrega.origem_longitude],
-                    [entrega.destino_latitude, entrega.destino_longitude],
-                  ]}
-                  pathOptions={{ color: "red", weight: 4 }}
-                />
+                {/* PARTE PERCORRIDA (AZUL) */}
+                {rotaPercorrida.length > 1 && (
+                  <Polyline
+                    positions={rotaPercorrida}
+                    pathOptions={{ color: "#2563eb", weight: 5 }}
+                  />
+                )}
+
+                {/* RESTO DA ROTA (CINZA) */}
+                {rotaRestante.length > 1 && (
+                  <Polyline
+                    positions={rotaRestante}
+                    pathOptions={{ color: "#9ca3af", weight: 5, dashArray: "6 8" }}
+                  />
+                )}
               </MapContainer>
 
             </div>
@@ -250,7 +582,7 @@ export default function EntregasEntregador() {
 
             {/* PERFIL */}
             <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-bold text-lg">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-bold text-lg">
                 {entrega.solicitanteData?.nome.charAt(0)}
                 </div>
 
@@ -261,7 +593,7 @@ export default function EntregasEntregador() {
                 <p className="text-sm text-gray-500">
                     Cliente
                 </p>
-                </div>
+              </div>
             </div>
 
             {/* CONTATOS */}
@@ -300,15 +632,30 @@ export default function EntregasEntregador() {
 
           {/*  AÇÃO */}
           <section className="flex gap-3">
-            <button className="flex-1 cursor-pointer py-4 bg-red-700 text-white font-bold rounded-2xl hover:bg-red-800 transition shadow-lg shadow-red-700/20 active:scale-[0.98]">
+            {!entrega.entregador && (
+              <button
+                onClick={async () => {
+                  await aceitarPedido(entrega.id);
+                  fetchEntrega();
+                }}
+                className="flex-1 py-4 cursor-pointer bg-green-600 text-white font-bold rounded-2xl"
+              >
                 Aceitar corrida
-            </button>
+              </button>
+            )}
 
-            <button className="flex-1 cursor-pointer py-4 bg-white border border-gray-200 text-gray-600 font-bold rounded-2xl hover:bg-gray-50 transition active:scale-[0.98]">
-                Recusar
-            </button>
+            {entrega.entregador && STATUS_FLOW[entrega.status] && (
+              <button
+                onClick={handleAtualizarStatus}
+                className={`flex-1 py-4 cursor-pointer text-white font-bold rounded-2xl transition ${
+                  STATUS_STYLE[entrega.status] || "bg-red-700"
+                }`}
+              >
+                {STATUS_FLOW[entrega.status].label}
+              </button>
+            )}
 
-        </section>
+          </section>
 
         </div>
 
