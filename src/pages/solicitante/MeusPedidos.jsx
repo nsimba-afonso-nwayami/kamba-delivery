@@ -1,11 +1,17 @@
 import { useState, useEffect } from "react";
 import SolicitanteLayout from "./components/SolicitanteLayout";
 import Modal from "./components/Modal";
+import ModalSmall from "./components/ModalSmall";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { getPedidos, cancelarPedido } from "../../services/pedidosService";
 import { getUsuarioById } from "../../services/usuariosService";
 import { getUltimaPosicaoEntregador } from "../../services/rastreamentoService";
+import {
+  createAvaliacao,
+  getAvaliacoes,
+  updateAvaliacao,
+} from "../../services/avaliacoesService";
 import { formatPrice } from "../../utils/formatPrice";
 import toast from "react-hot-toast";
 
@@ -21,6 +27,95 @@ export default function MeusPedidos() {
   const [posicaoEntregador, setPosicaoEntregador] = useState(null);         // progresso da entrega (mapa)
   const [routeInfo, setRouteInfo] = useState(null);     // info da rota (OSRM)
   const [rotaCaminho, setRotaCaminho] = useState([]);
+  const [isAvaliacaoOpen, setIsAvaliacaoOpen] = useState(false);
+  const [pedidoParaAvaliar, setPedidoParaAvaliar] = useState(null);
+  const [nota, setNota] = useState(0);
+  const [comentario, setComentario] = useState("");
+  const [avaliacaoExistenteId, setAvaliacaoExistenteId] = useState(null);
+
+  // FUNÇÃO PARA ABRIR MODAL DE AVALIAÇÃO
+  const handleAbrirAvaliacao = async (pedido) => {
+    setPedidoParaAvaliar(pedido);
+
+    // MOSTRAR NO CONSOLE O QUE VAMOS USAR
+    console.log("Pedido para avaliar:", pedido);
+
+    try {
+      const avaliacoes = await getAvaliacoes();
+
+      const avaliacaoExistente = avaliacoes.find(
+        (a) => a.pedido === pedido.id
+      );
+
+      if (avaliacaoExistente) {
+        setNota(avaliacaoExistente.estrelas || 0);
+        setComentario(avaliacaoExistente.comentario || "");
+        setAvaliacaoExistenteId(avaliacaoExistente.id);
+      } else {
+        setNota(0);
+        setComentario("");
+        setAvaliacaoExistenteId(null);
+      }
+
+      setIsAvaliacaoOpen(true);
+
+      console.log("Avaliação existente:", avaliacaoExistente);
+
+    } catch (err) {
+      console.log("Erro ao buscar avaliações:", err);
+
+      setNota(0);
+      setComentario("");
+      setAvaliacaoExistenteId(null);
+      setIsAvaliacaoOpen(true);
+    }
+  };
+
+  // FUNÇÃO PARA ENVIAR AVALIAÇÃO
+  const handleEnviarAvaliacao = async () => {
+    if (!pedidoParaAvaliar) return;
+
+    if (nota === 0) {
+      toast.error("Selecione uma quantidade de estrelas");
+      return;
+    }
+
+    try {
+      const payload = {
+        pedido: pedidoParaAvaliar.id,
+        entregador: pedidoParaAvaliar.entregador,
+        estrelas: nota,
+        comentario: comentario,
+      };
+
+      console.log("Payload enviado:", payload);
+
+      if (avaliacaoExistenteId) {
+        await updateAvaliacao(avaliacaoExistenteId, payload);
+        toast.success("Avaliação atualizada com sucesso!");
+      } else {
+        await createAvaliacao(payload);
+        toast.success("Avaliação enviada com sucesso!");
+      }
+
+      setIsAvaliacaoOpen(false);
+      setPedidoParaAvaliar(null);
+      setNota(0);
+      setComentario("");
+      setAvaliacaoExistenteId(null);
+
+    } catch (err) {
+      console.log(
+        "Erro ao salvar avaliação:",
+        err?.response?.data || err
+      );
+
+      toast.error(
+        err?.response?.data?.detail ||
+        "Erro ao salvar avaliação"
+      );
+    }
+  };
 
   useEffect(() => {
     const loadRoute = async () => {
@@ -459,7 +554,7 @@ export default function MeusPedidos() {
                           )}
 
                           {uiStatus === "entregue" && (
-                            <button className="px-6 py-3 bg-amber-100 text-amber-700 text-[11px] font-bold rounded-xl hover:bg-amber-200 transition-all uppercase tracking-widest border border-amber-200">
+                            <button onClick={() => handleAbrirAvaliacao(pedido)} className="px-6 py-3 cursor-pointer bg-amber-100 text-amber-700 text-[11px] font-bold rounded-xl hover:bg-amber-200 transition-all uppercase tracking-widest border border-amber-200">
                               <i className="fas fa-star mr-1"></i> Avaliar
                             </button>
                           )}
@@ -657,6 +752,57 @@ export default function MeusPedidos() {
               </div>
             )}
           </Modal>
+
+          <ModalSmall
+            isOpen={isAvaliacaoOpen}
+            onClose={() => setIsAvaliacaoOpen(false)}
+            title="Avaliar Entrega"
+          >
+            <div className="space-y-5">
+
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase mb-3">
+                  Sua avaliação
+                </p>
+
+                <div className="flex gap-2 justify-center">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setNota(star)}
+                      className="text-3xl cursor-pointer"
+                    >
+                      <i
+                        className={`fas fa-star ${
+                          star <= nota
+                            ? "text-yellow-400"
+                            : "text-gray-300"
+                        }`}
+                      ></i>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <textarea
+                  value={comentario}
+                  onChange={(e) => setComentario(e.target.value)}
+                  placeholder="Comentário (opcional)"
+                  rows={4}
+                  className="w-full p-4 rounded-2xl border border-gray-200 outline-none resize-none text-sm"
+                />
+              </div>
+
+              <button
+                onClick={handleEnviarAvaliacao}
+                className="w-full py-4 cursor-pointer bg-red-700 text-white rounded-xl font-bold text-[11px] uppercase tracking-widest"
+              >
+                Enviar Avaliação
+              </button>
+            </div>
+          </ModalSmall>
         </div>
       </SolicitanteLayout>
     </>
