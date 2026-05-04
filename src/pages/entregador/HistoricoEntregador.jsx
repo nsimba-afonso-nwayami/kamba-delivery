@@ -87,7 +87,7 @@ export default function HistoricoEntregador() {
             </button>
           </div>
 
-          {/* 💰 GANHOS */}
+          {/* GANHOS */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
             <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
@@ -132,7 +132,7 @@ export default function HistoricoEntregador() {
                 <button
                   key={type}
                   onClick={() => setFilterType(type)}
-                  className={`px-5 py-3 rounded-xl text-xs font-bold uppercase transition-all ${
+                  className={`px-5 py-3 cursor-pointer rounded-xl text-xs font-bold uppercase transition-all ${
                     filterType === type
                       ? "bg-red-700 text-white shadow-md shadow-red-200"
                       : "bg-gray-50 text-gray-500 hover:bg-gray-100"
@@ -197,18 +197,6 @@ export default function HistoricoEntregador() {
                     
                     <div className="text-xs text-gray-500">
                       Cliente: <span className="font-bold text-gray-700">{item.cliente}</span>
-                    </div>
-
-                    <div className="flex gap-2">
-                      {item.status === "concluido" && (
-                        <button className="px-4 py-2 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-lg hover:bg-amber-100 border border-amber-100">
-                          <i className="fas fa-star mr-1"></i> Avaliar cliente
-                        </button>
-                      )}
-
-                      <button className="px-4 py-2 bg-gray-900 text-white text-[10px] font-bold rounded-lg hover:bg-red-700 transition">
-                        Ver detalhes
-                      </button>
                     </div>
 
                   </div>
