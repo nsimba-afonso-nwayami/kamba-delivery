@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import EntregadorLayout from "./components/EntregadorLayout";
 import ModalSmall from "./components/ModalSmall";
-import { getPedidosPublicos, getMeusPedidosAtivos, aceitarPedido } from "../../services/pedidosService";
+import { getPedidos, getPedidosPublicos, getMeusPedidosAtivos, getHistoricoEntregador,  aceitarPedido } from "../../services/pedidosService";
 import { getAvaliacoes } from "../../services/avaliacoesService";
 import { createNotificacao } from "../../services/notificacoesService";
 import { useAuth } from "../../contexts/AuthContext";
@@ -22,55 +22,53 @@ export default function DashboardEntregador() {
   const [showAll, setShowAll] = useState(false);
   const navigate = useNavigate();
 
+  const refreshDashboard = async () => {
+    if (!user?.id) return;
+
+    try {
+      const [historico, avaliacoes] = await Promise.all([
+        getHistoricoEntregador(user.id),
+        getAvaliacoes(),
+      ]);
+
+      const hoje = new Date().toISOString().split("T")[0];
+
+      const corridasHoje = historico.filter((p) => {
+        const dataPedido = (p.criado_em)?.split("T")[0];
+        return dataPedido === hoje && p.status === "ENTREGUE";
+      });
+
+      const ganhos = corridasHoje.reduce((acc, p) => {
+        return acc + Number(p.valor_final || p.valor_sugerido || 0);
+      }, 0);
+
+      const minhasAvaliacoes = avaliacoes.filter((a) =>
+        historico.some((h) => String(h.id) === String(a.pedido || a.pedido_id))
+      );
+
+      const media =
+        minhasAvaliacoes.length > 0
+          ? minhasAvaliacoes.reduce((acc, a) => acc + Number(a.estrelas || a.nota || 0), 0) /
+            minhasAvaliacoes.length
+          : 0;
+
+      setCorridasHoje(corridasHoje.length);
+      setGanhosHoje(ganhos);
+      setAvaliacao(media.toFixed(1));
+
+    } catch (err) {
+      console.log("Erro refresh dashboard:", err);
+    }
+  };
+
   useEffect(() => {
-    const loadStats = async () => {
-      if (!user?.id) return;
+    refreshDashboard();
 
-      try {
-        const pedidos = await getPedidos();
-        const avaliacoes = await getAvaliacoes();
+    const interval = setInterval(() => {
+      refreshDashboard();
+    }, 5000); // ou 10000 se quiseres menos carga
 
-        // FILTRAR pedidos do entregador logado
-        const meusPedidos = pedidos.filter(
-          (p) => String(p.entregador) === String(user.id)
-        );
-
-        // CORRIDAS HOJE
-        const hoje = new Date().toISOString().split("T")[0];
-
-        const corridasHoje = meusPedidos.filter((p) => {
-          const dataPedido = p.created_at?.split("T")[0];
-          return dataPedido === hoje && p.status === "ENTREGUE";
-        });
-
-        setCorridasHoje(corridasHoje.length);
-
-        // GANHOS HOJE
-        const ganhos = corridasHoje.reduce((acc, p) => {
-          return acc + Number(p.valor_final || p.valor_sugerido || 0);
-        }, 0);
-
-        setGanhosHoje(ganhos);
-
-        // AVALIAÇÃO MÉDIA 
-        const minhasAvaliacoes = avaliacoes.filter(
-          (a) => String(a.entregador) === String(user.id)
-        );
-
-        const media =
-          minhasAvaliacoes.length > 0
-            ? minhasAvaliacoes.reduce((acc, a) => acc + a.nota, 0) /
-              minhasAvaliacoes.length
-            : 0;
-
-        setAvaliacao(media.toFixed(1));
-
-      } catch (err) {
-        console.log("Erro stats dashboard:", err);
-      }
-    };
-
-    loadStats();
+    return () => clearInterval(interval);
   }, [user?.id]);
 
   const statsCards = [
@@ -88,7 +86,7 @@ export default function DashboardEntregador() {
     },
     {
       label: "Avaliação",
-      value: avaliacao || 0,
+      value: `${avaliacao}/5.0` || 0,
       extra: null,
       align: "split",
       stars: true,
@@ -140,7 +138,7 @@ export default function DashboardEntregador() {
       const updated = await getPedidosPublicos();
 
       const ordenados = updated.sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        (a, b) => new Date(b.criado_em) - new Date(a.criado_em)
       );
 
       setPedidos(ordenados);
