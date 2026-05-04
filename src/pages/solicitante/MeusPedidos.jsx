@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap } fro
 import "leaflet/dist/leaflet.css";
 import { getPedidos, cancelarPedido } from "../../services/pedidosService";
 import { getUsuarioById } from "../../services/usuariosService";
+import { getUltimaPosicaoEntregador } from "../../services/rastreamentoService";
 import { formatPrice } from "../../utils/formatPrice";
 import toast from "react-hot-toast";
 
@@ -17,8 +18,9 @@ export default function MeusPedidos() {
   const [search, setSearch] = useState("");            // busca
   const [statusFilter, setStatusFilter] = useState("todos"); // filtro status
   const [selectedPedido, setSelectedPedido] = useState(null); // pedido aberto no modal
-  const [progress, setProgress] = useState(0);         // progresso da entrega (mapa)
+  const [posicaoEntregador, setPosicaoEntregador] = useState(null);         // progresso da entrega (mapa)
   const [routeInfo, setRouteInfo] = useState(null);     // info da rota (OSRM)
+  const [rotaCaminho, setRotaCaminho] = useState([]);
 
   useEffect(() => {
     const loadRoute = async () => {
@@ -84,6 +86,7 @@ export default function MeusPedidos() {
     const fetchPedidos = async () => {
       try {
         const data = await getPedidos();
+        console.log("Pedidos recebidos da API:", data);
 
         // ENRIQUECER pedidos com dados do entregador
         const pedidosComEntregador = await Promise.all(
@@ -119,11 +122,33 @@ export default function MeusPedidos() {
     fetchPedidos();
   }, []);
 
+  const calcularRotaReal = async (lat1, lon1, lat2, lon2) => {
+    try {
+      const resp = await fetch(
+        `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=full&geometries=geojson`
+      );
+
+      const data = await resp.json();
+
+      if (data.routes?.length > 0) {
+        const coordinates = data.routes[0].geometry.coordinates.map(
+          (p) => [p[1], p[0]]
+        );
+
+        setRotaCaminho(coordinates);
+      }
+    } catch (err) {
+      console.log("Erro ao calcular rota real:", err);
+    }
+  };
+
   // NORMALIZA STATUS
   const mapStatus = (status) => {
     switch (status) {
       case "AGUARDANDO_PROPOSTAS":
         return "pendente";
+      case "PROPOSTA_ACEITA":
+        return "aceita";
       case "EM_ROTA":
         return "em_rota";
       case "ENTREGUE":
@@ -141,6 +166,11 @@ export default function MeusPedidos() {
       label: "Pendente",
       icon: "fa-clock",
       style: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    },
+    aceita: {
+      label: "Aceita",
+      icon: "fa-handshake",
+      style: "bg-purple-100 text-purple-700 border-purple-200",
     },
     em_rota: {
       label: "Em rota",
@@ -205,6 +235,20 @@ export default function MeusPedidos() {
     }
   };
 
+  useEffect(() => {
+    if (
+      selectedPedido?.origem_latitude &&
+      selectedPedido?.destino_latitude
+    ) {
+      calcularRotaReal(
+        selectedPedido.origem_latitude,
+        selectedPedido.origem_longitude,
+        selectedPedido.destino_latitude,
+        selectedPedido.destino_longitude
+      );
+    }
+  }, [selectedPedido]);
+
   // FORMATAR TEMPO
   const formatTempo = (min) => {
     if (min < 60) return `${Math.round(min)} min`;
@@ -216,24 +260,25 @@ export default function MeusPedidos() {
   };
 
   // CALCULAR POSIÇÃO DO ENTREGADOR
-  const getDriverPosition = (pedido) => {
-    if (!pedido) return null;
+  useEffect(() => {
+  if (!selectedPedido?.id) return;
 
-    const [lat1, lng1] = [
-      pedido.origem_latitude,
-      pedido.origem_longitude,
-    ];
+  const fetchPosicao = async () => {
+    const pos = await getUltimaPosicaoEntregador(
+        selectedPedido.id
+      );
 
-    const [lat2, lng2] = [
-      pedido.destino_latitude,
-      pedido.destino_longitude,
-    ];
+      if (pos) {
+        setPosicaoEntregador(pos);
+      }
+    };
 
-    return [
-      lat1 + (lat2 - lat1) * (progress / 100),
-      lng1 + (lng2 - lng1) * (progress / 100),
-    ];
-  };
+    fetchPosicao();
+
+    const interval = setInterval(fetchPosicao, 5000);
+
+    return () => clearInterval(interval);
+  }, [selectedPedido?.id]);
 
   // VALORES DERIVADOS
   const distanciaKm = routeInfo?.distanciaKm || 0;
@@ -314,6 +359,7 @@ export default function MeusPedidos() {
             >
               <option value="todos">Todos os status</option>
               <option value="pendente">Pendentes</option>
+              <option value="aceita">Aceites</option>
               <option value="em_rota">Em rota</option>
               <option value="entregue">Entregues</option>
               <option value="cancelado">Cancelados</option>
@@ -449,7 +495,10 @@ export default function MeusPedidos() {
           {/* MODAL DETALHADO */}
           <Modal
             isOpen={!!selectedPedido}
-            onClose={() => setSelectedPedido(null)}
+            onClose={() => {
+              setSelectedPedido(null);
+              setRotaCaminho([]);
+            }}
             title={`Detalhes da Corrida ${selectedPedido?.titulo}`}
             icon="fas fa-receipt"
           >
@@ -534,27 +583,28 @@ export default function MeusPedidos() {
                       ]}
                     >
                       <Tooltip permanent direction="top" offset={[0, -10]}>
-                        Destino: {selectedPedido.endereco_endereco}
+                        Destino: {selectedPedido.destino_endereco}
                       </Tooltip>
                     </Marker>
-                    {selectedPedido.status === "em_rota" && (
-                      <Marker position={getDriverPosition(selectedPedido)}>
-                        <Popup>Motorista</Popup>
+                    {posicaoEntregador && (
+                      <Marker position={posicaoEntregador}>
+                        <Tooltip
+                          permanent
+                          direction="top"
+                          offset={[0, -10]}
+                        >
+                          Entregador em tempo real
+                        </Tooltip>
                       </Marker>
                     )}
-                    <Polyline
-                      positions={[
-                        [
-                          selectedPedido.origem_latitude,
-                          selectedPedido.origem_longitude
-                        ],
-                        [
-                          selectedPedido.destino_latitude,
-                          selectedPedido.destino_longitude
-                        ]
-                      ]}
-                      color="red"
-                    />
+                    {rotaCaminho.length > 0 && (
+                      <Polyline
+                        positions={rotaCaminho}
+                        color="red"
+                        weight={4}
+                        opacity={0.7}
+                      />
+                    )}
                     </MapContainer>
                   ) : (
                     <div className="flex items-center justify-center h-full text-gray-400">
@@ -562,25 +612,6 @@ export default function MeusPedidos() {
                     </div>
                   )}
                 </div>
-
-                {selectedPedido.status === "EM_ROTA" && (
-                  <div className="bg-gray-50 p-3 rounded-2xl border text-sm">
-                    <p className="font-bold text-gray-700 mb-2">
-                      Progresso da entrega
-                    </p>
-
-                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-red-700 transition-all"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-
-                    <p className="text-xs text-gray-500 mt-2">
-                      Motorista em rota ({progress.toFixed(0)}%)
-                    </p>
-                  </div>
-                )}
 
                 {/* PONTOS DE ROTA */}
                 <div className="space-y-3">
