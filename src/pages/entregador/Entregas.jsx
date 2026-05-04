@@ -559,7 +559,7 @@ export default function EntregasEntregador() {
                 {rotaRestante.length > 1 && (
                   <Polyline
                     positions={rotaRestante}
-                    pathOptions={{ color: "#9ca3af", weight: 5, dashArray: "6 8" }}
+                    pathOptions={{ color: "red", weight: 5 }}
                   />
                 )}
               </MapContainer>
