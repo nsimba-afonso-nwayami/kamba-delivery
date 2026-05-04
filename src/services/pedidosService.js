@@ -38,18 +38,17 @@ export const getMeusPedidosAtivos = async (entregadorId) => {
 
 
 // HISTÓRICO DO ENTREGADOR
-export const getHistoricoEntregador = async (entregadorId) => {
-  const data = await getPedidos();
+export async function getHistoricoEntregador(entregadorId) {
+  const response = await api.get("/pedidos/");
 
-  return data
+  return response.data
     .filter(
       (pedido) =>
         String(pedido.entregador) === String(entregadorId) &&
-        (pedido.status === "ENTREGUE" ||
-         pedido.status === "CANCELADO")
+        (pedido.status === "ENTREGUE" || pedido.status === "CANCELADO")
     )
     .sort((a, b) => b.id - a.id);
-};
+}
 
 // DETALHE DO PEDIDO
 export const getPedido = async (id) => {
