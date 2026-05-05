@@ -1,19 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import SolicitanteLayout from "./components/SolicitanteLayout";
 import Modal from "./components/Modal";
 import ModalSmall from "./components/ModalSmall";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import toast from "react-hot-toast";
 import { getPedidos, cancelarPedido } from "../../services/pedidosService";
 import { getUsuarioById } from "../../services/usuariosService";
 import { getUltimaPosicaoEntregador } from "../../services/rastreamentoService";
-import {
-  createAvaliacao,
-  getAvaliacoes,
-  updateAvaliacao,
-} from "../../services/avaliacoesService";
+import { createAvaliacao, getAvaliacoes, updateAvaliacao, } from "../../services/avaliacoesService";
+import { getMensagensPedido, enviarMensagemPedido, } from "../../services/mensagemService";
 import { formatPrice } from "../../utils/formatPrice";
-import toast from "react-hot-toast";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function MeusPedidos() {
   // ESTADO DA PÁGINA
@@ -32,6 +30,11 @@ export default function MeusPedidos() {
   const [nota, setNota] = useState(0);
   const [comentario, setComentario] = useState("");
   const [avaliacaoExistenteId, setAvaliacaoExistenteId] = useState(null);
+  const { user } = useAuth();
+  const [openChat, setOpenChat] = useState(false);
+  const [newMessage, setNewMessage] = useState("");
+  const [mensagensChat, setMensagensChat] = useState([]);
+  const mensagensEndRef = useRef(null);
 
   // FUNÇÃO PARA ABRIR MODAL DE AVALIAÇÃO
   const handleAbrirAvaliacao = async (pedido) => {
@@ -416,6 +419,72 @@ export default function MeusPedidos() {
     }
   };
 
+  //Mensagens
+  //carrega as mensagens
+  const carregarMensagens = async () => {
+    if (!selectedPedido?.id || !user?.id) return;
+
+    try {
+      const mensagens = await getMensagensPedido(selectedPedido.id);
+
+      const formatadas = mensagens.map((msg) => ({
+        id: msg.id,
+        texto: msg.texto,
+        enviadoPor:
+          Number(msg.remetente) === Number(user.id)
+            ? "eu"
+            : "outro",
+        hora: new Date(msg.criado_em).toLocaleTimeString("pt-PT", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      }));
+
+      setMensagensChat(formatadas);
+    } catch (err) {
+      console.log("Erro ao carregar mensagens:", err);
+    }
+  };
+
+  //useffect do chat
+  useEffect(() => {
+    if (!openChat) return;
+
+    carregarMensagens();
+
+    const interval = setInterval(() => {
+      carregarMensagens();
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [openChat, selectedPedido?.id, user?.id]);
+
+  useEffect(() => {
+    mensagensEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [mensagensChat]);
+
+  //Enviar mensagem
+  const handleEnviarMensagem = async () => {
+    if (!newMessage.trim()) return;
+    if (!selectedPedido?.id || !user?.id) return;
+
+    try {
+      await enviarMensagemPedido(
+        selectedPedido.id,
+        newMessage.trim(),
+        user.id
+      );
+
+      setNewMessage("");
+
+      await carregarMensagens();
+    } catch (err) {
+      toast.error("Erro ao enviar mensagem");
+    }
+  };
+
   return (
     <>
       <title>Meus pedidos | Kamba Delivery</title>
@@ -747,7 +816,19 @@ export default function MeusPedidos() {
                         <span className="text-[10px] font-bold uppercase tracking-widest">Zap</span>
                       </a>
                     </div>
+
+                    <div className="w-full">
+                      <button
+                        onClick={() => setOpenChat(true)}
+                        className="w-full mt-4 py-3 cursor-pointer bg-red-700 text-white font-bold rounded-xl hover:bg-red-800 transition flex items-center justify-center gap-2"
+                      >
+                        <i className="fas fa-message"></i>
+                        Enviar mensagem no app
+                      </button>
+                    </div>
                   </div>
+
+                  
                 )}
               </div>
             )}
@@ -803,6 +884,65 @@ export default function MeusPedidos() {
               </button>
             </div>
           </ModalSmall>
+
+
+          <Modal
+            isOpen={openChat}
+            onClose={() => setOpenChat(false)}
+            title={selectedPedido?.entregadorData?.nome}
+            icon="fas fa-comment-dots"
+          >
+            <div className="flex flex-col h-[65vh] max-h-[75vh]">
+
+              {/* MENSAGENS */}
+              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 bg-gray-50/50 rounded-2xl border border-gray-100/50">
+                {mensagensChat.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`flex ${
+                      m.enviadoPor === "eu"
+                        ? "justify-end"
+                        : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`inline-block max-w-[85%] p-3 rounded-2xl text-[13px] font-medium shadow-sm ${
+                        m.enviadoPor === "eu"
+                          ? "bg-gray-900 text-white rounded-tr-none ml-auto"
+                          : "bg-white text-gray-700 border border-gray-100 rounded-tl-none mr-auto"
+                      }`}
+                    >
+                      <p>{m.texto}</p>
+
+                      <span className="block text-[8px] mt-1.5 font-bold uppercase tracking-widest opacity-60">
+                        {m.hora}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+                <div ref={mensagensEndRef} />
+              </div>
+
+              {/* INPUT */}
+              <div className="border-t border-gray-100 pt-3 flex gap-2 items-center bg-white px-4">
+                <input
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Mensagem..."
+                  className="flex-1 px-4 py-3 bg-gray-100 rounded-xl focus:bg-white focus:border-red-700 outline-none text-sm"
+                />
+
+                <button
+                  onClick={handleEnviarMensagem}
+                  className="w-11 h-11 cursor-pointer bg-red-700 text-white rounded-xl flex items-center justify-center hover:bg-red-800 transition"
+                >
+                  <i className="fas fa-paper-plane text-sm"></i>
+                </button>
+              </div>
+            </div>
+          </Modal>
         </div>
       </SolicitanteLayout>
     </>
