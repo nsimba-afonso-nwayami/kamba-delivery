@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 import { getMeusPedidosAtivos, aceitarPedido, pedidoACaminho, itemRetirado, pedidoEmEntrega, pedidoEntregue } from "../../services/pedidosService";
 import { getUsuarioById } from "../../services/usuariosService";
 import { enviarPosicao } from "../../services/rastreamentoService";
+import { getMensagensPedido, enviarMensagemPedido,} from "../../services/mensagemService";
 import { useAuth } from "../../contexts/AuthContext";
 import { formatPrice } from "../../utils/formatPrice";
 import { toast } from "react-hot-toast";
@@ -24,6 +25,8 @@ export default function EntregasEntregador() {
   const ultimaPosicaoRef = useRef(null);
   const avisouRef = useRef(false);
   const lastRouteTimeRef = useRef(0);
+  const [mensagensChat, setMensagensChat] = useState([]);
+  const mensagensEndRef = useRef(null);
 
   // Dados da API
   const fetchEntrega = async () => {
@@ -399,10 +402,66 @@ export default function EntregasEntregador() {
     }
   };
 
-  const mensagensChat = [
-    { id: 1, texto: "Olá, já estou a caminho.", enviadoPor: "eu", hora: "14:20" },
-    { id: 2, texto: "Ok, estou à espera.", enviadoPor: "outro", hora: "14:22" },
-  ];
+  //Mensagens
+  const carregarMensagens = async () => {
+    if (!entrega?.id || !user?.id) return;
+
+    try {
+      const mensagens = await getMensagensPedido(entrega.id);
+
+      const formatadas = mensagens.map((msg) => ({
+        id: msg.id,
+        texto: msg.texto,
+        enviadoPor:
+          Number(msg.remetente) === Number(user.id) ? "eu" : "outro",
+        hora: new Date(msg.criado_em).toLocaleTimeString("pt-PT", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      }));
+
+      setMensagensChat(formatadas);
+    } catch (err) {
+      console.log("Erro ao carregar mensagens:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!openChat) return;
+
+    carregarMensagens();
+
+    const interval = setInterval(() => {
+      carregarMensagens();
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [openChat, entrega?.id, user?.id]);
+
+  useEffect(() => {
+    mensagensEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [mensagensChat]);
+
+  const handleEnviarMensagem = async () => {
+    if (!newMessage.trim()) return;
+    if (!entrega?.id || !user?.id) return;
+
+    try {
+      await enviarMensagemPedido(
+        entrega.id,
+        newMessage.trim(),
+        user.id
+      );
+
+      setNewMessage("");
+
+      await carregarMensagens();
+    } catch (err) {
+      toast.error("Erro ao enviar mensagem");
+    }
+  };
 
   if (!entrega) {
     return (
@@ -669,35 +728,37 @@ export default function EntregasEntregador() {
 
                 {/* MENSAGENS */}
                 <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 bg-gray-50/50 rounded-2xl border border-gray-100/50">
-                {mensagensChat.map((m) => (
-                    <div key={m.id} className={`flex ${m.enviadoPor === "eu" ? "justify-end" : "justify-start"}`}>
-                    <div className={`inline-block max-w-[85%] p-3 rounded-2xl text-[13px] font-medium shadow-sm ${
-                        m.enviadoPor === "eu" 
-                        ? "bg-gray-900 text-white rounded-tr-none ml-auto" 
-                        : "bg-white text-gray-700 border border-gray-100 rounded-tl-none mr-auto"
-                    }`}>
-                        <p>{m.texto}</p>
-                        <span className="block text-[8px] mt-1.5 font-bold uppercase tracking-widest opacity-60">
-                        {m.hora}
-                        </span>
-                    </div>
-                    </div>
-                ))}
+                  {mensagensChat.map((m) => (
+                      <div key={m.id} className={`flex ${m.enviadoPor === "eu" ? "justify-end" : "justify-start"}`}>
+                        <div className={`inline-block max-w-[85%] p-3 rounded-2xl text-[13px] font-medium shadow-sm ${
+                            m.enviadoPor === "eu" 
+                            ? "bg-gray-900 text-white rounded-tr-none ml-auto" 
+                            : "bg-white text-gray-700 border border-gray-100 rounded-tl-none mr-auto"
+                        }`}>
+                            <p>{m.texto}</p>
+                            <span className="block text-[8px] mt-1.5 font-bold uppercase tracking-widest opacity-60">
+                            {m.hora}
+                            </span>
+                        </div>
+                      </div>
+                  ))}
+
+                  <div ref={mensagensEndRef} />
                 </div>
 
                 {/* INPUT */}
                 <div className="border-t border-gray-100 pt-3 flex gap-2 items-center bg-white px-4">
-                <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Mensagem..."
-                    className="flex-1 px-4 py-3 bg-gray-100 rounded-xl focus:bg-white focus:border-red-700 outline-none text-sm"
-                />
+                  <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Mensagem..."
+                      className="flex-1 px-4 py-3 bg-gray-100 rounded-xl focus:bg-white focus:border-red-700 outline-none text-sm"
+                  />
 
-                <button className="w-11 h-11 bg-red-700 text-white rounded-xl flex items-center justify-center hover:bg-red-800 transition">
-                    <i className="fas fa-paper-plane text-sm"></i>
-                </button>
+                  <button onClick={handleEnviarMensagem} className="w-11 h-11 cursor-pointer bg-red-700 text-white rounded-xl flex items-center justify-center hover:bg-red-800 transition">
+                      <i className="fas fa-paper-plane text-sm"></i>
+                  </button>
                 </div>
 
             </div>
