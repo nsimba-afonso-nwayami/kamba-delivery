@@ -2,8 +2,9 @@ import { Link } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade } from "swiper/modules";
 
+// Import Swiper styles
 import "swiper/css";
-import "swiper/css/effect-fade"; 
+import "swiper/css/effect-fade";
 
 import HeroImg1 from "../../assets/img/hero1.jpg";
 import HeroImg2 from "../../assets/img/hero2.jpg";
@@ -14,76 +15,109 @@ export default function Hero() {
     {
       id: 1,
       image: HeroImg1,
-      title: <>Entregas rápidas em <span className="text-red-700">Luanda</span></>,
-      description: "A Kamba Delivery conecta você aos melhores entregadores da cidade. Simples, rápido e seguro.",
+      badge: "Entregas Rápidas",
+      title: (
+        <>
+          Entregas rápidas em <span className="text-red-500">Luanda</span>
+        </>
+      ),
+      description:
+        "Conectamos você aos melhores entregadores da cidade. Simples, rápido e totalmente seguro para o seu negócio ou necessidade pessoal.",
       buttonText: "Começar agora",
       link: "/register",
-      secondaryButton: { text: "Como funciona", link: "/#como-funciona" }
+      secondaryButton: { text: "Como funciona", link: "/#como-funciona" },
     },
     {
       id: 2,
       image: HeroImg2,
-      title: "Precisa de uma entrega?",
-      description: "Solicite um entregador em minutos e acompanhe tudo em tempo real.",
-      buttonText: "Solicitar entrega",
-      link: "/register"
+      badge: "Para Empresas",
+      title: "Logística Inteligente para seu Negócio",
+      description:
+        "Foque nas vendas e deixe a logística com a gente. Entregas agendadas, em tempo real e com total controle.",
+      buttonText: "Cadastrar Empresa",
+      link: "/register",
     },
     {
       id: 3,
       image: HeroImg3,
-      title: "Ganhe dinheiro fazendo entregas",
-      description: "Seja um entregador parceiro e aumente sua renda com flexibilidade.",
-      buttonText: "Tornar-se entregador",
-      link: "/register"
-    }
+      badge: "Seja Nosso Parceiro",
+      title: "Aumente sua Renda Sendo Entregador",
+      description:
+        "Flexibilidade total de horários, ganhos competitivos e suporte contínuo. Junte-se à frota do Kamba Delivery.",
+      buttonText: "Tornar-se Entregador",
+      link: "/register",
+    },
   ];
 
-  const btnPrimary = "bg-red-700 text-white px-8 py-3.5 rounded-xl font-bold text-center shadow-lg shadow-red-700/20 hover:bg-red-900 transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 w-full md:w-fit";
-  const btnSecondary = "border-2 border-white text-white px-8 py-3.5 rounded-xl font-bold text-center hover:bg-white hover:text-red-900 transition-all duration-300 flex items-center justify-center gap-2 w-full md:w-fit";
+  // Estilos de Botão Padronizados (Pílula, uppercase, text-xs, cursor-pointer)
+  const btnBase =
+    "group px-8 py-4 rounded-full font-bold text-center transition-all duration-300 active:scale-95 flex items-center justify-center gap-2.5 w-full sm:w-fit tracking-wide text-xs uppercase cursor-pointer";
+
+  const btnPrimary = `${btnBase} bg-red-700 text-white shadow-lg shadow-red-700/20 hover:bg-red-800 hover:shadow-red-700/30`;
+
+  const btnSecondary = `${btnBase} bg-white/10 text-white border border-white/20 backdrop-blur-sm hover:bg-white hover:text-red-700 hover:border-white`;
 
   return (
-    <section className="mt-20 overflow-hidden">
+    <section className="mt-20 overflow-hidden bg-gray-900">
       <Swiper
         modules={[Autoplay, EffectFade]}
         effect="fade"
-        autoplay={{ delay: 6000, disableOnInteraction: false }}
+        grabCursor={true}
+        autoplay={{ delay: 7000, disableOnInteraction: false }}
         loop={true}
-        className="h-screen"
+        className="h-[calc(100vh-80px)] min-h-150"
       >
         {slides.map((slide) => (
           <SwiperSlide key={slide.id}>
             {({ isActive }) => (
               <div className="h-full relative flex items-center overflow-hidden">
-                
-                {/* Imagem com efeito Ken Burns (Zoom) */}
-                <div className={`absolute inset-0 transition-transform duration-10000 ease-linear ${isActive ? "scale-110" : "scale-100"}`}>
-                   <div 
-                    className="w-full h-full bg-cover bg-center"
+                {/* Background Image com Efeito Ken Burns Suave */}
+                <div
+                  className={`absolute inset-0 transition-transform duration-10000 ease-linear ${
+                    isActive ? "scale-105" : "scale-100"
+                  }`}
+                >
+                  <div
+                    className="w-full h-full bg-cover bg-center bg-no-repeat"
                     style={{ backgroundImage: `url(${slide.image})` }}
                   />
                 </div>
 
-                <div className="absolute inset-0 bg-black/60"></div>
+                {/* Overlay Gradiente */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/40"></div>
 
-                <div className="relative z-10 max-w-7xl mx-auto px-6 text-white w-full">
-                  <div className={`${isActive ? "animate-fade-in-up" : "opacity-0"} flex flex-col items-start`}>
-                    
-                    <h1 className="text-4xl md:text-6xl font-bold leading-tight max-w-4xl">
+                {/* Conteúdo Centralizado */}
+                <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 md:px-10 text-white w-full">
+                  <div
+                    className={`flex flex-col items-center justify-center text-center mx-auto ${
+                      isActive ? "animate-fade-in-up" : "opacity-0"
+                    }`}
+                  >
+                    {/* Badge Superior Padronizada */}
+                    <span className="inline-block px-4 py-1.5 rounded-full bg-white/10 text-white border border-white/20 font-semibold text-xs tracking-wider uppercase mb-4 backdrop-blur-sm">
+                      {slide.badge}
+                    </span>
+
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.1] tracking-tighter max-w-4xl">
                       {slide.title}
                     </h1>
 
-                    <p className="mt-4 text-lg text-rose-200 max-w-xl leading-relaxed">
+                    <p className="mt-6 text-base md:text-lg text-white/90 max-w-2xl leading-relaxed font-light">
                       {slide.description}
                     </p>
 
-                    <div className="mt-6 flex flex-col md:flex-row gap-4 w-full md:w-fit">
+                    {/* Área de Botões Padronizados */}
+                    <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-fit">
                       <Link to={slide.link} className={btnPrimary}>
-                        {slide.buttonText}
-                        <i className="fas fa-arrow-right text-xs"></i>
+                        <span>{slide.buttonText}</span>
+                        <i className="fas fa-arrow-right text-xs transition-transform group-hover:translate-x-1"></i>
                       </Link>
 
                       {slide.secondaryButton && (
-                        <Link to={slide.secondaryButton.link} className={btnSecondary}>
+                        <Link
+                          to={slide.secondaryButton.link}
+                          className={btnSecondary}
+                        >
                           {slide.secondaryButton.text}
                         </Link>
                       )}

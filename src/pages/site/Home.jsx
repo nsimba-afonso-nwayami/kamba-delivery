@@ -23,7 +23,6 @@ export default function Home() {
       <SouEntregador />
       <ParallaxSection />
       <Download />
-      <Estatisticas />
       <FAQ />
       <AppEmAcao />
       <MapaCobertura />

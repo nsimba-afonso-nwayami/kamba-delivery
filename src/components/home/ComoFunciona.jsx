@@ -1,90 +1,93 @@
 import { Link } from "react-router-dom";
 
 export default function ComoFunciona() {
+  // Padronização dos botões conforme o design do projeto
+  const btnBase =
+    "group px-8 py-4 rounded-full font-bold text-center transition-all duration-300 active:scale-95 flex items-center justify-center gap-2.5 w-full sm:w-fit tracking-wide text-xs uppercase cursor-pointer";
+
+  const btnPrimary = `${btnBase} bg-red-700 text-white shadow-lg shadow-red-700/20 hover:bg-red-800 hover:shadow-red-700/30`;
+
   const passos = [
     {
-      id: "01",
+      id: 1,
       icon: "fas fa-map-marker-alt",
-      title: "Faça seu pedido",
-      desc: "Informe o local de coleta e o destino da entrega de forma simples e intuitiva.",
+      title: "Faça o seu pedido",
+      desc: "Informe o ponto de recolha e o destino final de forma rápida, simples e intuitiva no aplicativo.",
     },
     {
-      id: "02",
+      id: 2,
       icon: "fas fa-motorcycle",
-      title: "Acompanhe tudo",
-      desc: "Veja o entregador a caminho e acompanhe sua encomenda em tempo real no mapa.",
+      title: "Acompanhe no mapa",
+      desc: "Veja o seu entregador em tempo real no mapa com a rota exata até o local da entrega.",
     },
     {
-      id: "03",
-      icon: "fas fa-box",
+      id: 3,
+      icon: "fas fa-check-circle",
       title: "Entrega concluída",
-      desc: "Receba sua encomenda no destino final com total rapidez e segurança garantida.",
+      desc: "Receba a encomenda em mãos no destino com total segurança, rapidez e confirmação digital.",
     },
   ];
 
   return (
-    <section id="como-funciona" className="py-24 bg-white relative overflow-hidden">
+    <section
+      id="como-funciona"
+      className="py-24 bg-white relative overflow-hidden"
+    >
       {/* Detalhe de fundo sutil */}
-      <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-rose-50 rounded-full blur-3xl opacity-50" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-125 h-125 bg-rose-100 rounded-full blur-3xl opacity-50 z-0 pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        
         {/* CABEÇALHO */}
-        <div className="text-center space-y-4">
-          <h2 className="text-4xl md:text-5xl font-bold text-red-900">
+        <div className="text-center space-y-3 max-w-3xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-bold text-red-900 tracking-tighter leading-tight">
             Como funciona a <span className="text-red-700">Kamba</span>
           </h2>
-          <p className="text-gray-500 max-w-2xl mx-auto text-lg font-light">
-            Experiência simplificada para quem envia e agilidade total para quem recebe.
+          <p className="mt-4 text-gray-500 font-light text-[15px] leading-relaxed max-w-xl mx-auto">
+            Uma experiência descomplicada e transparente para quem envia e
+            agilidade total para quem recebe.
           </p>
         </div>
 
-        {/* GRID DE PASSOS */}
-        <div className="mt-20 grid gap-12 md:grid-cols-3 relative">
-          
-          {/* Linha conectora (visível apenas em Desktop) */}
-          <div className="hidden md:block absolute top-1/4 left-0 w-full h-0.5 bg-linear-to-r from-transparent via-rose-200 to-transparent" />
+        {/* LAYOUT FLUIDO E MODERNO (SEM CARDS) */}
+        <div className="mt-20 relative">
+          {/* Linha conectora contínua (visível em desktop) */}
+          <div className="hidden md:block absolute top-10 left-[15%] right-[15%] h-0.5 bg-linear-to-r from-rose-200 via-red-300 to-rose-200 z-0" />
 
-          {passos.map((passo) => (
-            <div 
-              key={passo.id} 
-              className="group relative bg-white p-10 rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/40 hover:border-red-700/30 transition-all duration-500 hover:-translate-y-2"
-            >
-              {/* Número do Passo (Badge flutuante) */}
-              <span className="absolute -top-4 -right-4 w-12 h-12 bg-rose-50 text-red-700 font-black flex items-center justify-center rounded-2xl text-xl group-hover:bg-red-700 group-hover:text-white transition-colors duration-500">
-                {passo.id}
-              </span>
+          <div className="grid md:grid-cols-3 gap-12 lg:gap-16 relative z-10">
+            {passos.map((passo) => (
+              <div
+                key={passo.id}
+                className="flex flex-col items-center text-center group"
+              >
+                {/* Ícone Hub Flutuante */}
+                <div className="w-20 h-20 rounded-2xl bg-white border border-gray-100 text-red-700 flex items-center justify-center text-2xl shadow-xl shadow-gray-200/50 group-hover:bg-red-700 group-hover:text-white group-hover:border-red-700 group-hover:scale-110 transition-all duration-300 relative">
+                  <i
+                    className={`${passo.icon} transition-transform group-hover:rotate-6`}
+                  ></i>
+                </div>
 
-              {/* Ícone com gradiente sutil */}
-              <div className="w-16 h-16 flex items-center justify-center rounded-2xl bg-linear-to-br from-red-700 to-red-900 text-white text-2xl shadow-lg shadow-red-700/30 group-hover:scale-110 transition-transform duration-500">
-                <i className={passo.icon}></i>
+                {/* Conteúdo textual */}
+                <h3 className="mt-8 font-bold text-red-900 text-xl tracking-tight">
+                  {passo.title}
+                </h3>
+                <p className="mt-3 text-gray-500 font-light text-sm leading-relaxed max-w-sm">
+                  {passo.desc}
+                </p>
               </div>
-
-              <h3 className="mt-8 font-bold text-xl text-red-900">
-                {passo.title}
-              </h3>
-
-              <p className="mt-4 text-gray-500 leading-relaxed">
-                {passo.desc}
-              </p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* CTA FINAL */}
-        <div className="mt-20 text-center">
-          <Link
-            to="/register"
-            className="inline-flex items-center gap-3 bg-red-700 text-white px-10 py-4 rounded-2xl font-black uppercase text-sm tracking-widest hover:bg-red-900 hover:shadow-2xl hover:shadow-red-700/40 transition-all duration-300 active:scale-95"
-          >
-            Começar Agora
-            <i className="fas fa-chevron-right text-xs"></i>
+        {/* CTA FINAL PADRONIZADO */}
+        <div className="mt-20 flex flex-col items-center justify-center">
+          <Link to="/register" className={btnPrimary}>
+            <span>Começar Agora</span>
+            <i className="fas fa-arrow-right text-xs transition-transform group-hover:translate-x-1"></i>
           </Link>
-          <p className="mt-6 text-sm text-gray-400 font-medium italic">
-            * Disponível em toda a região de Luanda
+          <p className="mt-4 text-xs text-gray-400 font-medium">
+            Atendimento rápido e seguro em toda a região de Luanda
           </p>
         </div>
-
       </div>
     </section>
   );
