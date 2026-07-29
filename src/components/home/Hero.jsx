@@ -84,7 +84,7 @@ export default function Hero() {
                 </div>
 
                 {/* Overlay Gradiente */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/40"></div>
+                <div className="absolute inset-0 bg-linear-to-r from-black/85 via-black/60 to-black/40"></div>
 
                 {/* Conteúdo Centralizado */}
                 <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 md:px-10 text-white w-full">
